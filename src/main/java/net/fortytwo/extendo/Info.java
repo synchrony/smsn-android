@@ -1,11 +1,11 @@
-package net.fortytwo.myotherbrain;
+package net.fortytwo.extendo;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.widget.TextView;
-import net.fortytwo.myotherbrain.R;
+import net.fortytwo.extendo.R;
 
 import java.util.Map;
 

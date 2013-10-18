@@ -1,4 +1,4 @@
-package net.fortytwo.myotherbrain.ping;
+package net.fortytwo.extendo.ping;
 
 /**
  * User: josh

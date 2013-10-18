@@ -1,4 +1,4 @@
-package net.fortytwo.myotherbrain.ping;
+package net.fortytwo.extendo.ping;
 
 import android.app.IntentService;
 import android.app.Notification;
@@ -11,7 +11,7 @@ import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
-import net.fortytwo.myotherbrain.R;
+import net.fortytwo.extendo.R;
 
 import java.util.Collection;
 import java.util.LinkedList;

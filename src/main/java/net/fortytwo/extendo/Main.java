@@ -1,4 +1,4 @@
-package net.fortytwo.myotherbrain;
+package net.fortytwo.extendo;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,11 +12,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
-import net.fortytwo.myotherbrain.events.EventLocationListener;
-import net.fortytwo.myotherbrain.events.EventsActivity;
-import net.fortytwo.myotherbrain.flashcards.android.Flashcards4Android;
-import net.fortytwo.myotherbrain.ping.BrainPingPopup;
-import net.fortytwo.myotherbrain.ping.BrainPingSettings;
+import net.fortytwo.extendo.events.EventLocationListener;
+import net.fortytwo.extendo.events.EventsActivity;
+import net.fortytwo.extendo.flashcards.android.Flashcards4Android;
+import net.fortytwo.extendo.ping.BrainPingPopup;
+import net.fortytwo.extendo.ping.BrainPingSettings;
 
 public class Main extends Activity {
     private EditText editor;

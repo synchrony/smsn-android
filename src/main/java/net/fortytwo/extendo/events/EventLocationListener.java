@@ -1,4 +1,4 @@
-package net.fortytwo.myotherbrain.events;
+package net.fortytwo.extendo.events;
 
 import android.location.Location;
 import android.location.LocationListener;

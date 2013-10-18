@@ -1,8 +1,8 @@
-package net.fortytwo.myotherbrain.flashcards.android;
+package net.fortytwo.extendo.flashcards.android;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
-import net.fortytwo.myotherbrain.R;
+import net.fortytwo.extendo.R;
 
 
 public class FlashcardsSettings extends PreferenceActivity {

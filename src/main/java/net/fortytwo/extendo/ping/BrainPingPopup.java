@@ -1,4 +1,4 @@
-package net.fortytwo.myotherbrain.ping;
+package net.fortytwo.extendo.ping;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -8,7 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
-import net.fortytwo.myotherbrain.R;
+import net.fortytwo.extendo.R;
 
 /**
  * User: josh

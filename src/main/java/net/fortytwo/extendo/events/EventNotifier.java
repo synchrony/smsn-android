@@ -1,4 +1,4 @@
-package net.fortytwo.myotherbrain.events;
+package net.fortytwo.extendo.events;
 
 import java.util.LinkedList;
 import java.util.List;

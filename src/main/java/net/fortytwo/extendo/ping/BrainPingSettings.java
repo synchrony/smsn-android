@@ -1,10 +1,10 @@
-package net.fortytwo.myotherbrain.ping;
+package net.fortytwo.extendo.ping;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import net.fortytwo.myotherbrain.R;
+import net.fortytwo.extendo.R;
 
 
 public class BrainPingSettings extends PreferenceActivity {

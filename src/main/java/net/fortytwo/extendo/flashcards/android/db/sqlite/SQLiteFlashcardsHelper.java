@@ -1,4 +1,4 @@
-package net.fortytwo.myotherbrain.flashcards.android.db.sqlite;
+package net.fortytwo.extendo.flashcards.android.db.sqlite;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
