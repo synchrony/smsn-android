@@ -7,6 +7,9 @@
     <!-- make calls to external services, such as Extendo's Rexster -->
     <uses-permission android:name="android.permission.INTERNET"></uses-permission>
 
+    <!-- communicate with Extend-o-Body devices -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- part of an experimental solution for sending Typeatron key events to Emacs. Requires root access -->

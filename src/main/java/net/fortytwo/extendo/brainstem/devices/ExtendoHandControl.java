@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.extendo.brainstem.devices;
 
 import android.util.Log;
 import android.widget.EditText;
@@ -6,6 +6,12 @@ import com.illposed.osc.OSCMessage;
 import net.fortytwo.extendo.Extendo;
 import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brain.ExtendoBrain;
+import net.fortytwo.extendo.brainstem.Brainstem;
+import net.fortytwo.extendo.brainstem.BrainstemAgent;
+import net.fortytwo.extendo.brainstem.EventStackProxy;
+import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
+import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
+import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
 import net.fortytwo.rdfagents.model.Dataset;
 
 import java.util.Date;
@@ -19,14 +25,13 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                               final ExtendoBrain brain,
                               final EventStackProxy proxy,
                               final BrainstemAgent agent,
-                              final EditText textEditor,
-                              final Main.Toaster toaster) {
+                              final Brainstem brainstem) {
         super(address);
 
         oscDispatcher.register("/exo/hand/ping-reply", new OSCMessageHandler() {
             public void handle(final OSCMessage message) {
                 long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
-                toaster.makeText("bluetooth delay: " + delay + "ms");
+                brainstem.getToaster().makeText("bluetooth delay: " + delay + "ms");
             }
         });
 
@@ -40,9 +45,9 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                 if (Extendo.VERBOSE) {
                     Object[] args = message.getArguments();
                     if (5 == args.length) {
-                        textEditor.setText("Extend-o-Hand raw gesture: " + args[0] + " " + args[1] + " " + args[2] + " " + args[3] + " " + args[4]);
+                        brainstem.getTextEditor().setText("Extend-o-Hand raw gesture: " + args[0] + " " + args[1] + " " + args[2] + " " + args[3] + " " + args[4]);
                     } else {
-                        textEditor.setText("Extend-o-Hand error (wrong # of args)");
+                        brainstem.getTextEditor().setText("Extend-o-Hand error (wrong # of args)");
                     }
                 }
 

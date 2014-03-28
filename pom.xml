@@ -107,6 +107,8 @@
             <artifactId>javaosc</artifactId>
             <version>20060402</version>
         </dependency>
+
+        <!-- test dependencies -->
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-queryparser-sparql</artifactId>

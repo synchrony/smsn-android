@@ -1,9 +1,10 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.extendo.brainstem.bluetooth;
 
 import android.content.Context;
 import android.util.Log;
 import at.abraxas.amarino.Amarino;
 import com.illposed.osc.OSCMessage;
+import net.fortytwo.extendo.brainstem.Brainstem;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

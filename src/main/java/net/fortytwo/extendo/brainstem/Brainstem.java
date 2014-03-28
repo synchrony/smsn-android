@@ -23,6 +23,11 @@ import net.fortytwo.extendo.Extendo;
 import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brain.BrainGraph;
 import net.fortytwo.extendo.brain.ExtendoBrain;
+import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
+import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
+import net.fortytwo.extendo.brainstem.devices.ExtendoHandControl;
+import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
+import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.p2p.Pinger;
 import net.fortytwo.extendo.util.properties.PropertyException;
 import net.fortytwo.extendo.util.properties.TypedProperties;
@@ -37,12 +42,19 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class Brainstem {
     public static final String TAG = "Brainstem";
+
+    // TODO: make these configurable; each agent should have a distinct UUID
+    public static final UUID
+            BLUETOOTH_UUID = UUID.fromString("2cbb2930-b5dd-11e3-a5e2-0800200c9a66");
+    public static final String
+            BLUETOOTH_NAME = "Extendo";
 
     private static final String PROPS_PATH = "/sdcard/brainstem.props";
 
@@ -59,9 +71,11 @@ public class Brainstem {
     private BluetoothDeviceControl extendoHand;
     private BluetoothDeviceControl typeatron;
 
-    private final OSCDispatcher oscDispatcher;
 
     private EditText textEditor;
+
+    private final OSCDispatcher oscDispatcher;
+    private final BluetoothManager bluetoothManager;
 
     private final ArduinoReceiver arduinoReceiver = new ArduinoReceiver();
 
@@ -73,27 +87,33 @@ public class Brainstem {
     private final ExtendoBrain brain;
 
     private Context context;
-    private final Main.Toaster toaster;
+    private Main.Toaster toaster;
     private boolean emacsAvailable;
 
-    public Brainstem(final Main.Toaster toaster) throws ExtendoBrain.ExtendoBrainException {
-        this.toaster = toaster;
+    private static final Brainstem INSTANCE;
+
+    static {
+        try {
+            INSTANCE = new Brainstem();
+        } catch (BrainstemException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    private Brainstem() throws BrainstemException {
+        oscDispatcher = new OSCDispatcher();
+        bluetoothManager = BluetoothManager.getInstance(oscDispatcher);
+
+        devices = new LinkedList<BluetoothDeviceControl>();
 
         // TODO: this TinkerGraph is a temporary solution
         KeyIndexableGraph g = new TinkerGraph();
         BrainGraph bg = new BrainGraph(g);
-        brain = new ExtendoBrain(bg);
-
-        devices = new LinkedList<BluetoothDeviceControl>();
-        oscDispatcher = new OSCDispatcher();
-    }
-
-    /**
-     * Load and configure resources with dependencies which cannot be resolved at construction time,
-     * such as (currently) the text editor
-     */
-    public void initialize(boolean emacsAvailable) throws BrainstemException {
-        this.emacsAvailable = emacsAvailable;
+        try {
+            brain = new ExtendoBrain(bg);
+        } catch (ExtendoBrain.ExtendoBrainException e) {
+            throw new BrainstemException(e);
+        }
 
         try {
             loadConfiguration();
@@ -102,28 +122,56 @@ public class Brainstem {
         }
     }
 
-    public void setTextEditor(final EditText textEditor) {
+    public static Brainstem getInstance() {
+        return INSTANCE;
+    }
+
+    /**
+     * Load and configure resources with dependencies which cannot be resolved at construction time,
+     * such as (currently) the text editor
+     */
+    public void initialize(final Main.Toaster toaster,
+                           final EditText textEditor,
+                           final boolean emacsAvailable) {
+        this.toaster = toaster;
         this.textEditor = textEditor;
+        this.emacsAvailable = emacsAvailable;
+    }
+
+    public BluetoothManager getBluetoothManager() {
+        return bluetoothManager;
+    }
+
+    public EditText getTextEditor() {
+        return textEditor;
+    }
+
+    public Main.Toaster getToaster() {
+        return toaster;
     }
 
     public void connect(final Context context) {
         this.context = context;
 
+        /*
         // in order to receive broadcasted intents we need to register our receiver
         context.registerReceiver(arduinoReceiver, new IntentFilter(AmarinoIntent.ACTION_RECEIVED));
 
         for (BluetoothDeviceControl d : devices) {
             d.connect(context);
         }
+        */
     }
 
     public void disconnect(final Context context) {
+        /*
         for (BluetoothDeviceControl d : devices) {
             d.disconnect(context);
         }
 
         // don't forget to unregister a registered receiver
         context.unregisterReceiver(arduinoReceiver);
+        */
     }
 
     // note: in Android, SharedPreferences are preferred to properties files.  This file specifically contains those
@@ -213,7 +261,7 @@ public class Brainstem {
         if (null != extendoHandAddress) {
             Log.i(TAG, "loading Extend-o-Hand device at address " + extendoHandAddress);
             extendoHand
-                    = new ExtendoHandControl(extendoHandAddress, oscDispatcher, brain, proxy, agent, textEditor, toaster);
+                    = new ExtendoHandControl(extendoHandAddress, oscDispatcher, brain, proxy, agent, this);
             addBluetoothDevice(extendoHand);
         }
 
@@ -222,7 +270,7 @@ public class Brainstem {
             Log.i(TAG, "loading Typeatron device at address " + typeatronAddress);
             try {
                 typeatron
-                        = new TypeatronControl(typeatronAddress, oscDispatcher, textEditor, toaster, emacsAvailable);
+                        = new TypeatronControl(typeatronAddress, oscDispatcher, this);
             } catch (BluetoothDeviceControl.DeviceInitializationException e) {
                 throw new BrainstemException(e);
             }
@@ -232,6 +280,7 @@ public class Brainstem {
 
     private void addBluetoothDevice(final BluetoothDeviceControl dc) {
         devices.add(dc);
+        bluetoothManager.register(dc);
     }
 
     private void handleOSCData(final String data) {

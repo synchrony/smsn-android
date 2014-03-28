@@ -1,6 +1,7 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.extendo.brainstem.osc;
 
 import com.illposed.osc.OSCMessage;
+import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
 
 import java.util.HashMap;
 import java.util.Map;

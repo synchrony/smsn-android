@@ -1,10 +1,14 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.extendo.brainstem.devices;
 
 import android.util.Log;
 import android.widget.EditText;
 import com.illposed.osc.OSCMessage;
 import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brain.BrainModeClient;
+import net.fortytwo.extendo.brainstem.Brainstem;
+import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
+import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
+import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
 
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -16,7 +20,8 @@ import java.util.Map;
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class TypeatronControl extends BluetoothDeviceControl {
-    private final Main.Toaster toaster;
+
+    private final Brainstem brainstem;
 
     private byte[] lastInput;
 
@@ -58,11 +63,10 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
     public TypeatronControl(final String address,
                             final OSCDispatcher oscDispatcher,
-                            final EditText textEditor,
-                            final Main.Toaster toaster,
-                            final boolean emacsAvailable) throws DeviceInitializationException {
+                            final Brainstem brainstem) throws DeviceInitializationException {
         super(address);
-        this.toaster = toaster;
+
+        this.brainstem = brainstem;
 
         setupParser();
 
@@ -70,7 +74,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
             public void handle(OSCMessage message) {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
-                    textEditor.append("\nerror message from Typeatron: " + args[0]);
+                    brainstem.getToaster().makeText("error message from Typeatron: " + args[0]);
                     Log.e(Brainstem.TAG, "error message from Typeatron " + address + ": " + args[0]);
                 } else {
                     Log.e(Brainstem.TAG, "wrong number of arguments in Typeatron error message");
@@ -82,7 +86,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
             public void handle(OSCMessage message) {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
-                    textEditor.append("\ninfo message from Typeatron: " + args[0]);
+                    brainstem.getToaster().makeText("\ninfo message from Typeatron: " + args[0]);
                     Log.i(Brainstem.TAG, "info message from Typeatron " + address + ": " + args[0]);
                 } else {
                     Log.e(Brainstem.TAG, "wrong number of arguments in Typeatron info message");
@@ -100,9 +104,9 @@ public class TypeatronControl extends BluetoothDeviceControl {
                         Log.e(Brainstem.TAG, "failed to relay Typeatron input");
                         e.printStackTrace(System.err);
                     }
-                    textEditor.setText("Typeatron keys: " + args[0] + " (" + totalButtonsCurrentlyPressed + " pressed)");
+                    brainstem.getToaster().makeText("Typeatron keys: " + args[0] + " (" + totalButtonsCurrentlyPressed + " pressed)");
                 } else {
-                    textEditor.setText("Typeatron control error (wrong # of args)");
+                    brainstem.getToaster().makeText("Typeatron control error (wrong # of args)");
                 }
             }
         });
@@ -427,7 +431,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
                         m.addArgument(text);
                         sendOSCMessage(m);
 
-                        toaster.makeText("typed: " + text);
+                        brainstem.getToaster().makeText("typed: " + text);
                     } else {
                         currentLineOfText.append(symbol);
                     }
@@ -447,12 +451,12 @@ public class TypeatronControl extends BluetoothDeviceControl {
                         m.addArgument(mode.name());
                         sendOSCMessage(m);
 
-                        toaster.makeText("entered mode: " + mode);
+                        brainstem.getToaster().makeText("entered mode: " + mode);
                     }
                     Modifier modifier = currentButtonState.modifier;
                     if (null != modifier) {
                         currentModifier = modifier;
-                        toaster.makeText("using modifier: " + modifier);
+                        brainstem.getToaster().makeText("using modifier: " + modifier);
                     }
                 }
             }

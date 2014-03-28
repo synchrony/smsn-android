@@ -2,6 +2,8 @@ package net.fortytwo.extendo;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.location.LocationListener;
@@ -17,10 +19,14 @@ import android.widget.EditText;
 import android.widget.Toast;
 import net.fortytwo.extendo.brain.ExtendoBrain;
 import net.fortytwo.extendo.brainstem.Brainstem;
+import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
+import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.events.EventLocationListener;
 import net.fortytwo.extendo.events.EventsActivity;
 import net.fortytwo.extendo.flashcards.android.Flashcards4Android;
 import net.fortytwo.extendo.ping.BrainPingSettings;
+
+import java.util.Set;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
@@ -32,10 +38,12 @@ public class Main extends Activity {
 
     private final Brainstem brainstem;
 
-    private final Toaster toaster = new Toaster();
+    private final Toaster toaster;
+
 
     public Main() throws ExtendoBrain.ExtendoBrainException {
-        brainstem = new Brainstem(toaster);
+        toaster = new Toaster();
+        brainstem = Brainstem.getInstance();
     }
 
     /**
@@ -50,11 +58,6 @@ public class Main extends Activity {
         // Inflate our UI from its XML layout description.
         setContentView(R.layout.main_layout);
 
-        // Find the text editor view inside the layout, because we
-        // want to do various programmatic things with it.
-        editor = (EditText) findViewById(R.id.editor);
-        brainstem.setTextEditor(editor);
-
         // Hook up button presses to the appropriate event handler.
         findViewById(R.id.back).setOnClickListener(backListener);
         findViewById(R.id.tryme).setOnClickListener(trymeListener);
@@ -63,8 +66,10 @@ public class Main extends Activity {
         findViewById(R.id.flashcards).setOnClickListener(flashcardsListener);
         findViewById(R.id.events).setOnClickListener(eventsListener);
 
-        editor.setText("testing");
-        boolean emacsAvailable = checkForEmacs();
+        // Find the text editor view inside the layout, because we
+        // want to do various programmatic things with it.
+        editor = (EditText) findViewById(R.id.editor);
+
 
         // Force the service to start.
         //     startService(new Intent(this, BrainPingService.class));
@@ -74,20 +79,29 @@ public class Main extends Activity {
         lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, l);
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, l);
 
+        brainstem.connect(this);
+
         try {
-            brainstem.initialize(emacsAvailable);
-        } catch (Brainstem.BrainstemException e) {
-            Log.e(Brainstem.TAG, "exception in Brainstem initialization: " + e.getMessage());
+            brainstem.getBluetoothManager().start(this);
+        } catch (BluetoothManager.BluetoothException e) {
+            Log.e(Brainstem.TAG, "bluetooth error: " + e.getMessage());
         }
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        brainstem.getBluetoothManager().onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
     protected void onStart() {
+        Log.i(Brainstem.TAG, "Brainstem start()");
         super.onStart();
 
-        Log.i(Brainstem.TAG, "Brainstem start()");
+        editor.setText("testing");
+        boolean emacsAvailable = checkForEmacs();
 
-        brainstem.connect(this);
+        brainstem.initialize(toaster, editor, emacsAvailable);
     }
 
     /**

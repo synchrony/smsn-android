@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.extendo.brainstem.osc;
 
 import com.illposed.osc.OSCMessage;
 
