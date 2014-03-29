@@ -10,7 +10,6 @@ import android.util.Log;
 import com.illposed.osc.OSCMessage;
 import com.illposed.osc.OSCPacket;
 import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
-import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 
@@ -19,6 +18,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,7 +32,13 @@ public class BluetoothManager {
 
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
-    private static final int[] MESSAGE_PREFIX = new int[]{18, -17, -65, -81, -17, -66, -65, -17, -66, -67};
+    // TODO: this short interval doesn't give the device much time to sleep
+    private static final long CONNECTION_RETRY_INTERVAL = 15000;
+
+    private static final int
+            SLIP_FRAME_END = 0xC0,
+            SLIP_SKIP_CHAR_AFTER = 19,
+            SLIP_SKIP_CHAR_BEFORE = 18;
 
     private boolean started = false;
 
@@ -41,9 +47,14 @@ public class BluetoothManager {
 
     private BluetoothAdapter adapter;
 
-    private final Map<String, BluetoothDeviceControl> registeredDevices;
+    private final Map<String, BluetoothDeviceControl> registeredDeviceControlsByAddress;
+    private final Map<String, BluetoothDevice> managedDevicesByAddress;
+    private final Set<String> connectedDeviceAddresses;
 
     private OSCDispatcher dispatcher;
+
+    private ServerThread serverThread;
+    private ClientThread clientThread;
 
     private static final BluetoothManager INSTANCE = new BluetoothManager();
 
@@ -53,11 +64,13 @@ public class BluetoothManager {
     }
 
     private BluetoothManager() {
-        registeredDevices = new HashMap<String, BluetoothDeviceControl>();
+        registeredDeviceControlsByAddress = new HashMap<String, BluetoothDeviceControl>();
+        managedDevicesByAddress = new HashMap<String, BluetoothDevice>();
+        connectedDeviceAddresses = new HashSet<String>();
     }
 
     public void register(final BluetoothDeviceControl device) {
-        registeredDevices.put(device.getAddress(), device);
+        registeredDeviceControlsByAddress.put(device.getAddress(), device);
     }
 
     public synchronized void start(final Activity activity) throws BluetoothException {
@@ -90,41 +103,51 @@ public class BluetoothManager {
         if (!bluetoothEnabled) {
             return;
         }
+
         Log.i(Brainstem.TAG, "Bluetooth is active");
 
         Set<BluetoothDevice> pairedDevices = adapter.getBondedDevices();
 
-        new AcceptThread().start();
-
         if (pairedDevices.size() > 0) {
-            StringBuilder sb = new StringBuilder("found paired devices:\n");
-            for (BluetoothDevice d : pairedDevices) {
-                sb.append("\t").append(d.getAddress())
-                        .append(": ").append(d.getName())
-                        .append(", ").append(d.getBluetoothClass())
-                        .append(", ").append(d.getBondState());
+            int count = 0;
+            StringBuilder sb = new StringBuilder("found bonded Extendo devices:\n");
 
+            for (BluetoothDevice d : pairedDevices) {
                 if (isBondedExtendoDevice(d)) {
-                    Log.i(Brainstem.TAG, "creating socket for Extendo device " + d.getName() + " at " + d.getAddress());
-                    try {
-                        BluetoothSocket socket = d.createRfcommSocketToServiceRecord(SPP_UUID);
-                        if (null == socket) {
-                            Log.i(Brainstem.TAG, "null Bluetooth socket");
-                        } else {
-                            Log.i(Brainstem.TAG, "connecting to Extendo device " + d.getName());
-                            socket.connect();
-                            manageConnectedSocket(socket);
-                        }
-                    } catch (IOException e) {
-                        throw new BluetoothException(e);
-                    }
+                    count++;
+                    sb.append("\t").append(d.getAddress())
+                            .append(": ").append(d.getName())
+                            .append(", ").append(d.getBluetoothClass())
+                            .append(", ").append(d.getBondState());
+
+                    managedDevicesByAddress.put(d.getAddress(), d);
                 }
             }
-            Log.i(Brainstem.TAG, sb.toString());
+
+            if (count > 0) {
+                Log.i(Brainstem.TAG, sb.toString());
+            } else {
+                Log.w(Brainstem.TAG, "did not find any bonded Extendo devices");
+            }
         }
 
+        //serverThread = new ServerThread();
+        //serverThread.start();
+
+        clientThread = new ClientThread();
+        clientThread.start();
 
         started = true;
+    }
+
+    public void stop() throws IOException {
+        if (null != serverThread) {
+            serverThread.cancel();
+        }
+
+        if (null != clientThread) {
+            clientThread.cancel();
+        }
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -144,18 +167,43 @@ public class BluetoothManager {
     }
 
     private boolean isBondedExtendoDevice(final BluetoothDevice device) {
-        return null != registeredDevices.get(device.getAddress())
+        return null != registeredDeviceControlsByAddress.get(device.getAddress())
                 && BluetoothDevice.BOND_BONDED == device.getBondState();
     }
 
-    private void manageConnectedSocket(final BluetoothSocket socket) throws IOException {
-        // currently, we only connect to devices which have been registered beforehand
-        if (isBondedExtendoDevice(socket.getRemoteDevice())) {
-            Log.i(Brainstem.TAG, "established new Bluetooth socket");
-            if (null == socket.getInputStream() || null == socket.getOutputStream()) {
-                Log.w(Brainstem.TAG, "Bluetooth socket for " + socket.getRemoteDevice().getName() + " has null input or output stream");
-            } else {
-                new BluetoothIOThread(socket).start();
+    private synchronized void deviceDisconnected(final BluetoothDevice device) {
+        Log.i(Brainstem.TAG, "Bluetooth device disconnected: " + device.getName());
+        connectedDeviceAddresses.remove(device.getAddress());
+    }
+
+    private void connectToSocket(final BluetoothSocket socket) throws IOException {
+        if (null == socket) {
+            Log.w(Brainstem.TAG, "null Bluetooth socket");
+        } else if (null == socket.getInputStream() || null == socket.getOutputStream()) {
+            Log.e(Brainstem.TAG, "Bluetooth socket for " + socket.getRemoteDevice().getName() + " has null input or output stream");
+        } else {
+            Log.i(Brainstem.TAG, "attempting connection to Extendo device " + socket.getRemoteDevice().getName());
+            socket.connect();
+
+            new BluetoothOSCThread(socket).start();
+
+            connectedDeviceAddresses.add(socket.getRemoteDevice().getAddress());
+        }
+    }
+
+    private synchronized void connectDevices() {
+        for (BluetoothDevice device : managedDevicesByAddress.values()) {
+            if (!connectedDeviceAddresses.contains(device.getAddress())) {
+                Log.i(Brainstem.TAG, "creating socket for Extendo device " + device.getName() + " at " + device.getAddress());
+                try {
+                    BluetoothSocket socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
+                    connectToSocket(socket);
+                } catch (IOException e) {
+                    Log.i(Brainstem.TAG, "could not connect to Bluetooth device " + device.getName() + ". Will try again later.");
+                } catch (Throwable t) {
+                    Log.e(Brainstem.TAG, "error while attempting to connect to Bluetooth device " + device.getName() + ": " + t.getMessage());
+                    t.printStackTrace(System.err);
+                }
             }
         }
     }
@@ -197,25 +245,30 @@ public class BluetoothManager {
         */
     }
 
-    private static final int
-            SLIP_FRAME_END = 0xC0,
-            SLIP_SKIP_CHAR_AFTER = 19,
-            SLIP_SKIP_CHAR_BEFORE = 18;
-
-    private class BluetoothIOThread extends Thread {
+    private class BluetoothOSCThread extends Thread {
+        private final BluetoothDevice device;
         private final InputStream inputStream;
         private final OutputStream outputStream;
 
-        public BluetoothIOThread(BluetoothSocket socket) throws IOException {
+        private boolean closed;
+
+        public BluetoothOSCThread(BluetoothSocket socket) throws IOException {
+            this.device = socket.getRemoteDevice();
             this.inputStream = socket.getInputStream();
             this.outputStream = socket.getOutputStream();
-            Log.i(Brainstem.TAG, "inputStream = " + inputStream + ", outputStream = " + outputStream);
+            //Log.i(Brainstem.TAG, "inputStream = " + inputStream + ", outputStream = " + outputStream);
         }
 
         public OutputStream getOutputStream() {
             return outputStream;
         }
 
+        public void close() {
+            Log.i(Brainstem.TAG, "closing device " + device.getName() + ". The device will not be reconnected.");
+            closed = true;
+        }
+
+        @Override
         public void run() {
             // messages from Extendo devices are generally very short
             byte[] buffer = new byte[1024];
@@ -230,11 +283,11 @@ public class BluetoothManager {
                 Log.i(Brainstem.TAG, "SLIP transposed frame escape: " + (int) foo[3]);
 
                 int index = 0;
+
                 // first datagram may be fragmentary, and will be discarded
                 boolean isComplete = false;
 
-                //while (inputStream.available() > 0) {
-                while (true) {
+                while (!closed) {
                     int b = inputStream.read();
                     //Log.i(Brainstem.TAG, "read: " + b);
                     if (b == SLIP_FRAME_END) {
@@ -253,11 +306,15 @@ public class BluetoothManager {
                         }
                     }
                 }
-
-                //Log.i(Brainstem.TAG, "Bluetooth I/O thread reached end of input");
             } catch (Throwable t) {
                 Log.e(Brainstem.TAG, "Bluetooth I/O thread failed with error: " + t.getMessage());
                 t.printStackTrace(System.err);
+            }
+
+            // If the connection was not deliberately closed (i.e. if the connection ended with an error or EOI),
+            // wait a short time and then attempt to reconnect.
+            if (!closed) {
+                deviceDisconnected(device);
             }
         }
 
@@ -265,13 +322,11 @@ public class BluetoothManager {
             Log.i(Brainstem.TAG, "" + n + " bytes received from Arduino:");
 
             // TODO: temporary debugging code
-            StringBuilder sb = new StringBuilder("bytes: ");
+            StringBuilder sb = new StringBuilder("\t");
             for (int i = 0; i < n; i++) {
                 sb.append(" ").append((int) buffer[i]);
             }
-            Log.i(Brainstem.TAG, "\t" + sb.toString());
-
-            //textEditor.setText("OSC: " + data);
+            Log.i(Brainstem.TAG, sb.toString());
 
             byte[] data;
 
@@ -280,38 +335,6 @@ public class BluetoothManager {
                 Log.w(Brainstem.TAG, "not a valid OSC message");
                 return;
             }
-
-                    /*
-                    // strip off the odd 0xEF 0xBF 0xBD three-byte sequence which sometimes encloses the message
-                    // I haven't quite grokked it.  It's like a UTF-8 byte order mark, but not quite, and it appears
-                    // both at the end and the beginning of the message.
-                    // It appears only when Amarino *and* OSCuino are used to send the OSC data over Bluetooth
-                    if (n >= MESSAGE_PREFIX.length) {
-                        //Log.i(TAG, "bytes[0] = " + (int) bytes[0] + ", " + "bytes[bytes.length - 3] = " + bytes[bytes.length - 3]);
-
-
-                        boolean match = true;
-                        for (int i = 0; i < MESSAGE_PREFIX.length; i++) {
-                            if (buffer[i] != MESSAGE_PREFIX[i]) {
-                                match = false;
-                                break;
-                            }
-                        }
-
-                        if (match) {
-                            if (MESSAGE_PREFIX.length == n) {
-                                Log.w(Brainstem.TAG, "received empty message from Arduino");
-                                continue;
-                            }
-
-                            Log.i(Brainstem.TAG, "stripping off message prefix");
-                            data = new String(Arrays.copyOfRange(buffer, MESSAGE_PREFIX.length, n));
-                        } else {
-                            data = new String(Arrays.copyOfRange(buffer, 0, n));
-                        }
-                    } else {
-                        data = new String(Arrays.copyOfRange(buffer, 0, n));
-                    }*/
 
             //if (Extendo.VERBOSE) {
             Log.i(Brainstem.TAG, "data from Arduino: " + data + " (length=" + data.length + ")");
@@ -326,10 +349,10 @@ public class BluetoothManager {
         }
     }
 
-    private class AcceptThread extends Thread {
+    private class ServerThread extends Thread {
         private final BluetoothServerSocket serverSocket;
 
-        public AcceptThread() {
+        public ServerThread() {
             // Use a temporary object that is later assigned to serverSocket,
             // because serverSocket is final
             BluetoothServerSocket tmp = null;
@@ -341,6 +364,7 @@ public class BluetoothManager {
             serverSocket = tmp;
         }
 
+        @Override
         public void run() {
             try {
                 Log.i(Brainstem.TAG, "starting Bluetooth listener thread");
@@ -356,10 +380,14 @@ public class BluetoothManager {
                     }
                     // If a connection was accepted
                     if (socket != null) {
-                        // Do work to manage the connection (in a separate thread)
-                        manageConnectedSocket(socket);
+                        if (isBondedExtendoDevice(socket.getRemoteDevice())) {
+                            // Do work to manage the connection (in a separate thread)
+                            connectToSocket(socket);
 
-                        // do *not* close the socket or break out; there may be other devices out there
+                            // do *not* close the socket or break out; there may be other devices out there
+                        } else {
+                            socket.close();
+                        }
                     }
                 }
             } catch (Throwable t) {
@@ -373,6 +401,33 @@ public class BluetoothManager {
          */
         public void cancel() throws IOException {
             serverSocket.close();
+        }
+    }
+
+    private class ClientThread extends Thread {
+        private boolean cancelled;
+
+        public void cancel() {
+            cancelled = true;
+        }
+
+        @Override
+        public void run() {
+            while (!cancelled) {
+                connectDevices();
+
+                if (connectedDeviceAddresses.size() > 0) {
+                    Log.i(Brainstem.TAG, "waiting " + CONNECTION_RETRY_INTERVAL + "ms before retrying "
+                            + (managedDevicesByAddress.size() - connectedDeviceAddresses.size()) + " Bluetooth connections");
+                }
+
+                try {
+                    Thread.sleep(CONNECTION_RETRY_INTERVAL);
+                } catch (InterruptedException e) {
+                    Log.e(Brainstem.TAG, "interrupted while waiting to retry Bluetooth connections: " + e.getMessage());
+                    e.printStackTrace(System.err);
+                }
+            }
         }
     }
 }
