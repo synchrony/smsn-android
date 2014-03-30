@@ -29,9 +29,6 @@ public class BluetoothManager {
 
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
-    // TODO: this short interval doesn't give the device much time to sleep
-    private static final long CONNECTION_RETRY_INTERVAL = 15000;
-
     public static final int
             SLIP_FRAME_END = 0xC0,
             ACK = 19,
@@ -249,7 +246,10 @@ public class BluetoothManager {
                 boolean isConnected = false;
 
                 while (!closed) {
-                    int b = inputStream.read();
+                    int b;
+                    //synchronized (device) {
+                        b = inputStream.read();
+                    //}
                     //Log.i(Brainstem.TAG, "read: " + b);
                     if (b == SLIP_FRAME_END) {
                         if (isConnected) {
@@ -265,7 +265,8 @@ public class BluetoothManager {
                             // at this point, we are sure we have a SLIP connection,
                             // so fire the device's connection event(s)
                             // TODO: do we really need to wait until we have incoming data, or do we know earlier that we have a SLIP connection?
-                            registeredDeviceControlsByAddress.get(device.getAddress()).connect(new BluetoothMessageWriter(outputStream));
+                            registeredDeviceControlsByAddress.get(device.getAddress()).connect(
+                                    new BluetoothMessageWriter(device, outputStream));
                         }
 
                         index = 0;
@@ -337,46 +338,18 @@ public class BluetoothManager {
             }
         }
 
-        /**
-         * Will cancel the listening socket, and cause the thread to finish
-         */
         public void cancel() throws IOException {
             serverSocket.close();
         }
     }
 
-    /*
-    private class ClientThread extends Thread {
-        private boolean cancelled;
-
-        public void cancel() {
-            cancelled = true;
-        }
-
-        @Override
-        public void run() {
-            while (!cancelled) {
-                connectDevices();
-
-                if (connectedDeviceAddresses.size() > 0) {
-                    Log.i(Brainstem.TAG, "waiting " + CONNECTION_RETRY_INTERVAL + "ms before retrying "
-                            + (managedDevicesByAddress.size() - connectedDeviceAddresses.size()) + " Bluetooth connections");
-                }
-
-                try {
-                    Thread.sleep(CONNECTION_RETRY_INTERVAL);
-                } catch (InterruptedException e) {
-                    Log.e(Brainstem.TAG, "interrupted while waiting to retry Bluetooth connections: " + e.getMessage());
-                    e.printStackTrace(System.err);
-                }
-            }
-        }
-    }*/
-
     public class BluetoothMessageWriter {
+        private final BluetoothDevice device;
         private final OutputStream outputStream;
 
-        public BluetoothMessageWriter(OutputStream outputStream) {
+        public BluetoothMessageWriter(final BluetoothDevice device,
+                                      final OutputStream outputStream) {
+            this.device = device;
             this.outputStream = outputStream;
         }
 
@@ -387,8 +360,10 @@ public class BluetoothManager {
             outputStream.write(SLIP_FRAME_END);
             */
 
-            outputStream.write(message);
-            outputStream.write(SLIP_FRAME_END);
+            //synchronized (device) {
+                outputStream.write(message);
+                outputStream.write(SLIP_FRAME_END);
+            //}
         }
     }
 }
