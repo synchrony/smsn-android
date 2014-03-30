@@ -2,12 +2,10 @@ package net.fortytwo.extendo.brainstem.bluetooth;
 
 import android.content.Context;
 import android.util.Log;
-import at.abraxas.amarino.Amarino;
 import com.illposed.osc.OSCMessage;
 import net.fortytwo.extendo.brainstem.Brainstem;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
@@ -23,21 +21,6 @@ public abstract class BluetoothDeviceControl {
 
     public String getAddress() {
         return address;
-    }
-
-    public void connect(final Context context) {
-        // connect to the specific Bluetooth device
-        Amarino.connect(context, address);
-
-        // also keep this context for sending of messages (note: we assume the same context is used throughout)
-        this.context = context;
-
-        onConnect();
-    }
-
-    public void disconnect(final Context context) {
-        // if you connect in onStart() you must not forget to disconnect when your app is closed
-        Amarino.disconnect(context, address);
     }
 
     public void connect(final BluetoothManager.BluetoothMessageWriter messageWriter) {
@@ -65,17 +48,15 @@ public abstract class BluetoothDeviceControl {
             Log.e(Brainstem.TAG, "error while sending OSC message to Bluetooth device at " + this.getAddress() + ": " + e.getMessage());
             e.printStackTrace(System.err);
         }
+    }
 
-        /*
-        if (null == context) {
-            Log.w(Brainstem.TAG, "can't send OSC message; context is null");
-            return;
-        }
+    protected long latestPing;
 
-        String serialMessage = new String(message.getByteArray());
-        //Log.i(Brainstem.TAG, "sending OSC message of length " + serialMessage.length());
-        Amarino.sendDataToArduino(context, address, 'o', serialMessage);
-        */
+    // convenience method
+    public void doPing() {
+        OSCMessage m = new OSCMessage("/exo/tt/ping");
+        latestPing = System.currentTimeMillis();
+        sendOSCMessage(m);
     }
 
     public class DeviceInitializationException extends Exception {

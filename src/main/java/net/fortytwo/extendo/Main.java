@@ -102,6 +102,11 @@ public class Main extends Activity {
         boolean emacsAvailable = checkForEmacs();
 
         brainstem.initialize(toaster, editor, emacsAvailable);
+
+        // note: calling this method on demand, when the Brainstem application starts/wakes, gives
+        // the user control and avoids draining the battery by repeatedly checking for devices in a
+        // background thread.
+        brainstem.getBluetoothManager().connectDevices();
     }
 
     /**

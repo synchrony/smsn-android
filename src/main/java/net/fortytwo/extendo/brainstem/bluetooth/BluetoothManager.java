@@ -54,7 +54,7 @@ public class BluetoothManager {
     private OSCDispatcher dispatcher;
 
     private ServerThread serverThread;
-    private ClientThread clientThread;
+    //private ClientThread clientThread;
 
     private static final BluetoothManager INSTANCE = new BluetoothManager();
 
@@ -134,8 +134,8 @@ public class BluetoothManager {
         //serverThread = new ServerThread();
         //serverThread.start();
 
-        clientThread = new ClientThread();
-        clientThread.start();
+        //clientThread = new ClientThread();
+        //clientThread.start();
 
         started = true;
     }
@@ -145,9 +145,9 @@ public class BluetoothManager {
             serverThread.cancel();
         }
 
-        if (null != clientThread) {
-            clientThread.cancel();
-        }
+        //if (null != clientThread) {
+        //    clientThread.cancel();
+       //}
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -192,10 +192,10 @@ public class BluetoothManager {
         }
     }
 
-    private synchronized void connectDevices() {
+    public synchronized void connectDevices() {
         for (BluetoothDevice device : managedDevicesByAddress.values()) {
             if (!connectedDeviceAddresses.contains(device.getAddress())) {
-                Log.i(Brainstem.TAG, "creating socket for Extendo device " + device.getName() + " at " + device.getAddress());
+                Log.i(Brainstem.TAG, "attempting to connect to Bluetooth device " + device.getName() + " at " + device.getAddress());
                 try {
                     BluetoothSocket socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
                     connectToSocket(socket);
@@ -413,6 +413,7 @@ public class BluetoothManager {
         }
     }
 
+    /*
     private class ClientThread extends Thread {
         private boolean cancelled;
 
@@ -438,7 +439,7 @@ public class BluetoothManager {
                 }
             }
         }
-    }
+    }*/
 
     //private static final int[] START_SEQUENCE = new int[]{ACK, START_FLAG, SLIP_FRAME_END};
 

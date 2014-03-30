@@ -57,8 +57,6 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
     private final BrainModeClientWrapper brainModeWrapper;
 
-    private long latestPing;
-
     private StringBuilder currentLineOfText = new StringBuilder();
 
     public TypeatronControl(final String address,
@@ -131,12 +129,6 @@ public class TypeatronControl extends BluetoothDeviceControl {
         } catch (IOException e) {
             throw new DeviceInitializationException(e);
         }
-    }
-
-    private void doPing() {
-        OSCMessage m = new OSCMessage("/exo/tt/ping");
-        latestPing = System.currentTimeMillis();
-        sendOSCMessage(m);
     }
 
     @Override

@@ -97,12 +97,6 @@
         </dependency>
 
         <dependency>
-            <groupId>at.abraxas</groupId>
-            <artifactId>amarino</artifactId>
-            <version>2.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.illposed.osc</groupId>
             <artifactId>javaosc</artifactId>
             <version>20060402</version>

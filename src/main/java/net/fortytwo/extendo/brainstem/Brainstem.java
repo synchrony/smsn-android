@@ -1,17 +1,12 @@
 package net.fortytwo.extendo.brainstem;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.util.Log;
 import android.widget.EditText;
-import at.abraxas.amarino.Amarino;
-import at.abraxas.amarino.AmarinoIntent;
 import com.illposed.osc.OSCMessage;
 import com.illposed.osc.OSCPacket;
 import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
@@ -19,7 +14,6 @@ import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import edu.rpi.twc.sesamestream.BindingSetHandler;
 import edu.rpi.twc.sesamestream.QueryEngine;
-import net.fortytwo.extendo.Extendo;
 import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brain.BrainGraph;
 import net.fortytwo.extendo.brain.ExtendoBrain;
@@ -37,7 +31,6 @@ import org.openrdf.query.BindingSet;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,9 +43,6 @@ import java.util.UUID;
 public class Brainstem {
     public static final String TAG = "Brainstem";
 
-    // TODO: make these configurable; each agent should have a distinct UUID
-    public static final UUID
-            BLUETOOTH_UUID = UUID.fromString("2cbb2930-b5dd-11e3-a5e2-0800200c9a66");
     public static final String
             BLUETOOTH_NAME = "Extendo";
 
@@ -76,8 +66,6 @@ public class Brainstem {
 
     private final OSCDispatcher oscDispatcher;
     private final BluetoothManager bluetoothManager;
-
-    private final ArduinoReceiver arduinoReceiver = new ArduinoReceiver();
 
     private final NotificationToneGenerator toneGenerator = new NotificationToneGenerator();
 
@@ -152,15 +140,6 @@ public class Brainstem {
 
     public void connect(final Context context) {
         this.context = context;
-
-        /*
-        // in order to receive broadcasted intents we need to register our receiver
-        context.registerReceiver(arduinoReceiver, new IntentFilter(AmarinoIntent.ACTION_RECEIVED));
-
-        for (BluetoothDeviceControl d : devices) {
-            d.connect(context);
-        }
-        */
     }
 
     public void disconnect(final Context context) {
@@ -426,83 +405,6 @@ public class Brainstem {
     public void pingExtendoHand() {
         agent.timeOfLastEvent = System.currentTimeMillis();
         // note: the timestamp argument is not yet used
-        Amarino.sendDataToArduino(context, extendoHand.getAddress(), 'p', agent.timeOfLastEvent);
-    }
-
-    /**
-     * ArduinoReceiver is responsible for catching broadcasted Amarino
-     * events.
-     * <p/>
-     * It extracts data from the intent and updates the graph accordingly.
-     */
-    private class ArduinoReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(final Context context,
-                              final Intent intent) {
-
-            // the device address from which the data was sent, we don't need it here but to demonstrate how you retrieve it
-            String address = intent.getStringExtra(AmarinoIntent.EXTRA_DEVICE_ADDRESS);
-
-            //Log.i(TAG, "received from address: " + address);
-
-            //toneGenerator.play();
-
-            // the type of data which is added to the intent
-            int dataType = intent.getIntExtra(AmarinoIntent.EXTRA_DATA_TYPE, -1);
-
-            // we only expect String data though, but it is better to check if really string was sent
-            // later Amarino will support differnt data types, so far data comes always as string and
-            // you have to parse the data to the type you have sent from Arduino, like it is shown below
-            if (dataType == AmarinoIntent.STRING_EXTRA) {
-                String data = intent.getStringExtra(AmarinoIntent.EXTRA_DATA);
-
-                if (data != null) {
-                    if (0 == data.length()) {
-                        Log.w(TAG, "received zero-length message from Arduino");
-                    } else {
-                        if (Extendo.VERBOSE) {
-                            Log.i(TAG, "data from Arduino: " + data);
-                        }
-                        //textEditor.setText("OSC: " + data);
-
-                        /*
-                        // TODO: temporary debugging code
-                        StringBuilder sb = new StringBuilder("data:");
-                        for (byte b : data.getBytes()) {
-                            sb.append(" ").append((int) b);
-                        }
-                        Log.i(TAG, sb.toString());
-                        //*/
-
-                        byte[] bytes = data.getBytes();
-
-                        // strip off the odd 0xEF 0xBF 0xBD three-byte sequence which sometimes encloses the message
-                        // I haven't quite grokked it.  It's like a UTF-8 byte order mark, but not quite, and it appears
-                        // both at the end and the beginning of the message.
-                        // It appears only when Amarino *and* OSCuino are used to send the OSC data over Bluetooth
-                        if (bytes.length >= 6) {
-                            //Log.i(TAG, "bytes[0] = " + (int) bytes[0] + ", " + "bytes[bytes.length - 3] = " + bytes[bytes.length - 3]);
-
-                            if (-17 == bytes[0] && -17 == bytes[bytes.length - 3]) {
-                                data = new String(Arrays.copyOfRange(bytes, 3, bytes.length - 3));
-                            }
-
-                            if (0 == data.length()) {
-                                Log.w(TAG, "received empty message from Arduino");
-                                return;
-                            }
-                        }
-
-                        // TODO: catching ArrayIndexOutOfBoundsException is temporary; fix the problem in the Arduino
-                        try {
-                            handleOSCData(data);
-                        } catch (ArrayIndexOutOfBoundsException e) {
-                            Log.e(Brainstem.TAG, "array index out of bounds when reading from Arduino");
-                        }
-                    }
-                }
-            }
-        }
+        extendoHand.doPing();
     }
 }
