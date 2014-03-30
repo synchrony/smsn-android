@@ -35,13 +35,14 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
-import java.util.UUID;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class Brainstem {
     public static final String TAG = "Brainstem";
+
+    public static final boolean VERBOSE = true;
 
     public static final String
             BLUETOOTH_NAME = "Extendo";
@@ -371,7 +372,7 @@ public class Brainstem {
         m.setAddress("/exo/tt/rgb");
         m.addArgument(0xff0000);
 
-        typeatron.sendOSCMessage(m);
+        typeatron.send(m);
     }
 
     public void simulateGestureEvent() {

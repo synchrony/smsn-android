@@ -7,9 +7,6 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.util.Log;
-import com.illposed.osc.OSCMessage;
-import com.illposed.osc.OSCPacket;
-import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 
@@ -147,7 +144,7 @@ public class BluetoothManager {
 
         //if (null != clientThread) {
         //    clientThread.cancel();
-       //}
+        //}
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -209,43 +206,6 @@ public class BluetoothManager {
         }
     }
 
-    private void handleOSCData(final byte[] data) {
-        OSCByteArrayToJavaConverter c = new OSCByteArrayToJavaConverter();
-
-        // TODO: is the array length all that is expected for the second argument?
-        OSCPacket p = c.convert(data, data.length);
-
-        if (p instanceof OSCMessage) {
-            if (!dispatcher.dispatch((OSCMessage) p)) {
-                Log.w(Brainstem.TAG, "no OSC handler at address " + ((OSCMessage) p).getAddress());
-
-                // TODO: temporary debugging code
-                String address = ((OSCMessage) p).getAddress();
-                StringBuilder sb = new StringBuilder("address bytes:");
-                for (byte b : address.getBytes()) {
-                    sb.append(" ").append((int) b);
-                }
-                Log.w(Brainstem.TAG, sb.toString());
-            }
-        } else {
-            Log.w(Brainstem.TAG, "OSC packet is of non-message type " + p.getClass().getSimpleName() + ": " + p);
-        }
-
-        /*
-        int i = message.indexOf(" ");
-        if (i > 0) {
-            String prefix = message.substring(i);
-
-            BluetoothOSCDeviceControl dc = deviceByOSCPrefix.get(prefix);
-            if (null == dc) {
-                Log.w(TAG, "no control matching OSC address " + prefix);
-            } else {
-                dc.handleOSCStyleMessage(message);
-            }
-        }
-        */
-    }
-
     private class BluetoothOSCThread extends Thread {
         private final BluetoothDevice device;
         private final InputStream inputStream;
@@ -296,7 +256,9 @@ public class BluetoothManager {
                             if (index > 0) {
                                 // skip the 19,18 sequence which (I have found) appears between datagrams
                                 if (index != 2 || buffer[0] != ACK || buffer[1] != START_FLAG) {
-                                    handleMessage(buffer, index);
+                                    byte[] data = Arrays.copyOfRange(buffer, 0, index);
+
+                                    dispatcher.receive(data);
                                 }
                             }
                         } else {
@@ -324,36 +286,6 @@ public class BluetoothManager {
             // wait a short time and then attempt to reconnect.
             if (!closed) {
                 deviceDisconnected(device);
-            }
-        }
-
-        private void handleMessage(byte[] buffer, int n) {
-            Log.i(Brainstem.TAG, "" + n + " bytes received from Arduino:");
-
-            // TODO: temporary debugging code
-            StringBuilder sb = new StringBuilder("\t");
-            for (int i = 0; i < n; i++) {
-                sb.append(" ").append((int) buffer[i]);
-            }
-            Log.i(Brainstem.TAG, sb.toString());
-
-            byte[] data;
-
-            data = Arrays.copyOfRange(buffer, 0, n);
-            if (data[0] != '/') {
-                Log.w(Brainstem.TAG, "not a valid OSC message");
-                return;
-            }
-
-            //if (Extendo.VERBOSE) {
-            Log.i(Brainstem.TAG, "data from Arduino: " + data + " (length=" + data.length + ")");
-            //}
-
-            // TODO: catching ArrayIndexOutOfBoundsException is temporary; fix the problem in the Arduino
-            try {
-                handleOSCData(data);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                Log.e(Brainstem.TAG, "array index out of bounds when reading from Arduino");
             }
         }
     }
@@ -441,8 +373,6 @@ public class BluetoothManager {
         }
     }*/
 
-    //private static final int[] START_SEQUENCE = new int[]{ACK, START_FLAG, SLIP_FRAME_END};
-
     public class BluetoothMessageWriter {
         private final OutputStream outputStream;
 
@@ -451,7 +381,6 @@ public class BluetoothManager {
         }
 
         public void sendMessage(final byte[] message) throws IOException {
-            //outputStream.write(START_SEQUENCE);
             /*
             outputStream.write(ACK);
             outputStream.write(START_FLAG);

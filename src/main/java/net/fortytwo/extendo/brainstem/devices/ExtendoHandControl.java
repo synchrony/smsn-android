@@ -26,7 +26,7 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                               final EventStackProxy proxy,
                               final BrainstemAgent agent,
                               final Brainstem brainstem) {
-        super(address);
+        super(address, oscDispatcher);
 
         oscDispatcher.register("/exo/hand/ping-reply", new OSCMessageHandler() {
             public void handle(final OSCMessage message) {
@@ -42,7 +42,7 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                 // TODO: the recognition instant should be inferred from the timestamp supplied by the device
                 Date recognizedAt = new Date();
 
-                if (Extendo.VERBOSE) {
+                if (Brainstem.VERBOSE) {
                     Object[] args = message.getArguments();
                     if (5 == args.length) {
                         brainstem.getTextEditor().setText("Extend-o-Hand raw gesture: " + args[0] + " " + args[1] + " " + args[2] + " " + args[3] + " " + args[4]);

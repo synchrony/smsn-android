@@ -1,9 +1,7 @@
 package net.fortytwo.extendo.brainstem.devices;
 
 import android.util.Log;
-import android.widget.EditText;
 import com.illposed.osc.OSCMessage;
-import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brain.BrainModeClient;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
@@ -62,7 +60,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
     public TypeatronControl(final String address,
                             final OSCDispatcher oscDispatcher,
                             final Brainstem brainstem) throws DeviceInitializationException {
-        super(address);
+        super(address, oscDispatcher);
 
         this.brainstem = brainstem;
 
@@ -427,7 +425,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
                         OSCMessage m = new OSCMessage("/exo/tt/morse");
                         m.addArgument(text);
-                        sendOSCMessage(m);
+                        send(m);
 
                         brainstem.getToaster().makeText("typed: " + text);
                     } else {
@@ -437,7 +435,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
                     if ("v".equals(symbol)) {
                         OSCMessage m = new OSCMessage("/exo/tt/vibro");
                         m.addArgument(1000);
-                        sendOSCMessage(m);
+                        send(m);
                     }*/
                 } else {
                     Mode mode = currentButtonState.mode;
@@ -447,7 +445,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
                         // feedback to the Typeatron whenever mode changes
                         OSCMessage m = new OSCMessage("/exo/tt/vibro/mode");
                         m.addArgument(mode.name());
-                        sendOSCMessage(m);
+                        send(m);
 
                         brainstem.getToaster().makeText("entered mode: " + mode);
                     }
