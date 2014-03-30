@@ -118,6 +118,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
                 // we assume this reply is a response to the latest ping
                 long delay = System.currentTimeMillis() - latestPing;
 
+                brainstem.getToaster().makeText("ping reply received from Typeatron " + address + " in " + delay + "ms");
                 Log.i(Brainstem.TAG, "ping reply received from Typeatron " + address + " in " + delay + "ms");
             }
         });
@@ -132,10 +133,15 @@ public class TypeatronControl extends BluetoothDeviceControl {
         }
     }
 
+    private void doPing() {
+        OSCMessage m = new OSCMessage("/exo/tt/ping");
+        latestPing = System.currentTimeMillis();
+        sendOSCMessage(m);
+    }
+
     @Override
     protected void onConnect() {
-        OSCMessage m = new OSCMessage("/exo/tt/ping");
-        sendOSCMessage(m);
+        doPing();
     }
 
     private class BrainModeClientWrapper {

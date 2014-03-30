@@ -35,10 +35,10 @@ public class BluetoothManager {
     // TODO: this short interval doesn't give the device much time to sleep
     private static final long CONNECTION_RETRY_INTERVAL = 15000;
 
-    private static final int
+    public static final int
             SLIP_FRAME_END = 0xC0,
-            SLIP_SKIP_CHAR_AFTER = 19,
-            SLIP_SKIP_CHAR_BEFORE = 18;
+            ACK = 19,
+            START_FLAG = 18;
 
     private boolean started = false;
 
@@ -174,6 +174,7 @@ public class BluetoothManager {
     private synchronized void deviceDisconnected(final BluetoothDevice device) {
         Log.i(Brainstem.TAG, "Bluetooth device disconnected: " + device.getName());
         connectedDeviceAddresses.remove(device.getAddress());
+        registeredDeviceControlsByAddress.get(device.getAddress()).disconnect();
     }
 
     private void connectToSocket(final BluetoothSocket socket) throws IOException {
@@ -274,7 +275,7 @@ public class BluetoothManager {
             byte[] buffer = new byte[1024];
 
             try {
-                Log.i(Brainstem.TAG, "starting Bluetooth I/O thread");
+                Log.i(Brainstem.TAG, "starting Bluetooth+OSC thread");
 
                 byte[] foo = new byte[]{(byte) 0xC0, (byte) 0xDB, (byte) 0xDC, (byte) 0xDD};
                 Log.i(Brainstem.TAG, "SLIP frame end: " + (int) foo[0]);
@@ -285,23 +286,31 @@ public class BluetoothManager {
                 int index = 0;
 
                 // first datagram may be fragmentary, and will be discarded
-                boolean isComplete = false;
+                boolean isConnected = false;
 
                 while (!closed) {
                     int b = inputStream.read();
                     //Log.i(Brainstem.TAG, "read: " + b);
                     if (b == SLIP_FRAME_END) {
-                        if (isComplete && index > 0) {
-                            // skip the 19,18 sequence which (I have found) appears between datagrams
-                            if (index != 2 || buffer[0] != SLIP_SKIP_CHAR_AFTER || buffer[1] != SLIP_SKIP_CHAR_BEFORE) {
-                                handleMessage(buffer, index);
+                        if (isConnected) {
+                            if (index > 0) {
+                                // skip the 19,18 sequence which (I have found) appears between datagrams
+                                if (index != 2 || buffer[0] != ACK || buffer[1] != START_FLAG) {
+                                    handleMessage(buffer, index);
+                                }
                             }
+                        } else {
+                            // at this point, we are sure we have a SLIP connection,
+                            // so fire the device's connection event(s)
+                            // TODO: do we really need to wait until we have incoming data, or do we know earlier that we have a SLIP connection?
+                            registeredDeviceControlsByAddress.get(device.getAddress()).connect(new BluetoothMessageWriter(outputStream));
                         }
 
                         index = 0;
-                        isComplete = true;
+
+                        isConnected = true;
                     } else {
-                        if (isComplete) {
+                        if (isConnected) {
                             buffer[index++] = (byte) b;
                         }
                     }
@@ -428,6 +437,28 @@ public class BluetoothManager {
                     e.printStackTrace(System.err);
                 }
             }
+        }
+    }
+
+    //private static final int[] START_SEQUENCE = new int[]{ACK, START_FLAG, SLIP_FRAME_END};
+
+    public class BluetoothMessageWriter {
+        private final OutputStream outputStream;
+
+        public BluetoothMessageWriter(OutputStream outputStream) {
+            this.outputStream = outputStream;
+        }
+
+        public void sendMessage(final byte[] message) throws IOException {
+            //outputStream.write(START_SEQUENCE);
+            /*
+            outputStream.write(ACK);
+            outputStream.write(START_FLAG);
+            outputStream.write(SLIP_FRAME_END);
+            */
+
+            outputStream.write(message);
+            outputStream.write(SLIP_FRAME_END);
         }
     }
 }
