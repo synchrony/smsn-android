@@ -12,11 +12,11 @@
     <parent>
         <groupId>net.fortytwo.extendo</groupId>
         <artifactId>extendo-all</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0</version>
     </parent>
 
     <properties>
-        <extendo.version>1.0-SNAPSHOT</extendo.version>
+        <extendo.version>1.0</extendo.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
