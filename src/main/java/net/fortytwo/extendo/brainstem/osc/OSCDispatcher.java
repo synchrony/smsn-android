@@ -1,6 +1,7 @@
 package net.fortytwo.extendo.brainstem.osc;
 
 import android.util.Log;
+import com.illposed.osc.OSCBundle;
 import com.illposed.osc.OSCMessage;
 import com.illposed.osc.OSCPacket;
 import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
@@ -91,6 +92,9 @@ public class OSCDispatcher {
             Log.w(Brainstem.TAG, "can't send OSC message; message writer is null");
         } else {
             try {
+                //OSCBundle bundle = new OSCBundle();
+                //bundle.addPacket(message);
+                //messageWriter.sendMessage(bundle.getByteArray());
                 messageWriter.sendMessage(message.getByteArray());
             } catch (IOException e) {
                 Log.e(Brainstem.TAG, "error while sending OSC message: " + e.getMessage());

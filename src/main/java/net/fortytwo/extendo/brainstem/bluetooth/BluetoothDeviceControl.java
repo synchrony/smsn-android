@@ -41,6 +41,7 @@ public abstract class BluetoothDeviceControl {
     public void doPing() {
         OSCMessage message = new OSCMessage("/exo/tt/ping");
         latestPing = System.currentTimeMillis();
+        message.addArgument(latestPing);
         send(message);
     }
 

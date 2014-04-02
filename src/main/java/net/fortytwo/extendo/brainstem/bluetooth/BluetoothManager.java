@@ -30,9 +30,7 @@ public class BluetoothManager {
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     public static final int
-            SLIP_FRAME_END = 0xC0,
-            ACK = 19,
-            START_FLAG = 18;
+            SLIP_FRAME_END = 0xC0;
 
     private boolean started = false;
 
@@ -246,20 +244,13 @@ public class BluetoothManager {
                 boolean isConnected = false;
 
                 while (!closed) {
-                    int b;
-                    //synchronized (device) {
-                        b = inputStream.read();
-                    //}
-                    //Log.i(Brainstem.TAG, "read: " + b);
+                    int b = inputStream.read();
                     if (b == SLIP_FRAME_END) {
                         if (isConnected) {
                             if (index > 0) {
-                                // skip the 19,18 sequence which (I have found) appears between datagrams
-                                if (index != 2 || buffer[0] != ACK || buffer[1] != START_FLAG) {
-                                    byte[] data = Arrays.copyOfRange(buffer, 0, index);
+                                byte[] data = Arrays.copyOfRange(buffer, 0, index);
 
-                                    dispatcher.receive(data);
-                                }
+                                dispatcher.receive(data);
                             }
                         } else {
                             // at this point, we are sure we have a SLIP connection,
@@ -354,16 +345,8 @@ public class BluetoothManager {
         }
 
         public void sendMessage(final byte[] message) throws IOException {
-            /*
-            outputStream.write(ACK);
-            outputStream.write(START_FLAG);
+            outputStream.write(message);
             outputStream.write(SLIP_FRAME_END);
-            */
-
-            //synchronized (device) {
-                outputStream.write(message);
-                outputStream.write(SLIP_FRAME_END);
-            //}
         }
     }
 }
