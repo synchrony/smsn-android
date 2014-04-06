@@ -21,11 +21,13 @@ import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
 import net.fortytwo.extendo.brainstem.devices.ExtendoHandControl;
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
+import net.fortytwo.extendo.brainstem.ripple.RippleSession;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.p2p.Pinger;
 import net.fortytwo.extendo.util.properties.PropertyException;
 import net.fortytwo.extendo.util.properties.TypedProperties;
 import net.fortytwo.rdfagents.model.Dataset;
+import net.fortytwo.ripple.RippleException;
 import org.openrdf.query.BindingSet;
 
 import java.io.File;
@@ -62,7 +64,6 @@ public class Brainstem {
     private BluetoothDeviceControl extendoHand;
     private BluetoothDeviceControl typeatron;
 
-
     private EditText textEditor;
 
     private final OSCDispatcher oscDispatcher;
@@ -74,8 +75,8 @@ public class Brainstem {
 
     private BrainstemAgent agent;
     private final ExtendoBrain brain;
+    private final RippleSession rippleSession;
 
-    private Context context;
     private Main.Toaster toaster;
     private boolean emacsAvailable;
 
@@ -101,6 +102,12 @@ public class Brainstem {
         try {
             brain = new ExtendoBrain(bg);
         } catch (ExtendoBrain.ExtendoBrainException e) {
+            throw new BrainstemException(e);
+        }
+
+        try {
+            rippleSession = new RippleSession();
+        } catch (RippleException e) {
             throw new BrainstemException(e);
         }
 
@@ -131,16 +138,16 @@ public class Brainstem {
         return bluetoothManager;
     }
 
+    public RippleSession getRippleSession() {
+        return rippleSession;
+    }
+
     public EditText getTextEditor() {
         return textEditor;
     }
 
     public Main.Toaster getToaster() {
         return toaster;
-    }
-
-    public void connect(final Context context) {
-        this.context = context;
     }
 
     public void disconnect(final Context context) {

@@ -79,8 +79,6 @@ public class Main extends Activity {
         lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, l);
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, l);
 
-        brainstem.connect(this);
-
         try {
             brainstem.getBluetoothManager().start(this);
         } catch (BluetoothManager.BluetoothException e) {

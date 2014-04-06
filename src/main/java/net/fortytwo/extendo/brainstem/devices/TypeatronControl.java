@@ -7,10 +7,15 @@ import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
+import net.fortytwo.extendo.brainstem.ripple.ExtendoRippleREPL;
+import net.fortytwo.extendo.brainstem.ripple.RippleSession;
+import net.fortytwo.ripple.RippleException;
+import net.fortytwo.ripple.model.ModelConnection;
 
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,13 +24,35 @@ import java.util.Map;
  */
 public class TypeatronControl extends BluetoothDeviceControl {
 
+    // outbound addresses
+    private final String
+            EXO_TT_MODE = "/exo/tt/mode",
+            EXO_TT_MORSE = "/exo/tt/morse",
+            EXO_TT_PHOTO_GET = "/exo/tt/photo/get",
+            EXO_TT_VIBR = "/exo/tt/vibr";
+
+    // inbound addresses
+    private final String
+            EXO_TT_ERROR = "/exo/tt/error",
+            EXO_TT_INFO = "/exo/tt/info",
+            EXO_TT_KEYS = "/exo/tt/keys",
+            EXO_TT_PHOTO_DATA = "/exo/tt/photo/data",
+            EXO_TT_PING_REPLY = "/exo/tt/ping/reply";
+
+
     private final Brainstem brainstem;
 
     private byte[] lastInput;
 
-    private enum Mode {LowercaseText, UppercaseText, Punctuation, Numeric, Hardware, Mash}
+    public enum Mode {
+        LowercaseText, UppercaseText, Punctuation, Numeric, Hardware, Mash;
 
-    private enum Modifier {Control, None}
+        public boolean isTextEntryMode() {
+            return this != Hardware && this != Mash;
+        }
+    }
+
+    public enum Modifier {Control, None}
 
     private class StateNode {
         /**
@@ -54,6 +81,8 @@ public class TypeatronControl extends BluetoothDeviceControl {
     private int totalButtonsCurrentlyPressed;
 
     private final BrainModeClientWrapper brainModeWrapper;
+    private final RippleSession rippleSession;
+    private final ExtendoRippleREPL rippleREPL;
 
     private StringBuilder currentLineOfText = new StringBuilder();
 
@@ -63,10 +92,16 @@ public class TypeatronControl extends BluetoothDeviceControl {
         super(address, oscDispatcher);
 
         this.brainstem = brainstem;
+        try {
+            rippleSession = new RippleSession();
+            rippleREPL = new ExtendoRippleREPL(rippleSession, this);
+        } catch (RippleException e) {
+            throw new DeviceInitializationException(e);
+        }
 
         setupParser();
 
-        oscDispatcher.register("/exo/tt/error", new OSCMessageHandler() {
+        oscDispatcher.register(EXO_TT_ERROR, new OSCMessageHandler() {
             public void handle(OSCMessage message) {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
@@ -78,7 +113,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
             }
         });
 
-        oscDispatcher.register("/exo/tt/info", new OSCMessageHandler() {
+        oscDispatcher.register(EXO_TT_INFO, new OSCMessageHandler() {
             public void handle(OSCMessage message) {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
@@ -90,13 +125,13 @@ public class TypeatronControl extends BluetoothDeviceControl {
             }
         });
 
-        oscDispatcher.register("/exo/tt/keys", new OSCMessageHandler() {
+        oscDispatcher.register(EXO_TT_KEYS, new OSCMessageHandler() {
             public void handle(final OSCMessage message) {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
                     try {
                         inputReceived(((String) args[0]).getBytes());
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         Log.e(Brainstem.TAG, "failed to relay Typeatron input");
                         e.printStackTrace(System.err);
                     }
@@ -107,7 +142,41 @@ public class TypeatronControl extends BluetoothDeviceControl {
             }
         });
 
-        oscDispatcher.register("/exo/tt/ping/reply", new OSCMessageHandler() {
+        oscDispatcher.register(EXO_TT_PHOTO_DATA, new OSCMessageHandler() {
+            public void handle(OSCMessage message) {
+                Object[] args = message.getArguments();
+                if (7 != args.length) {
+                    throw new IllegalStateException("photoresistor observation has unexpected number of arguments ("
+                            + args.length + "): " + message);
+                }
+
+                // workaround for unavailable Xerces dependency: make startTime and endTime into xsd:long instead of xsd:dateTime
+                long startTime = ((Date) args[0]).getTime();
+                long endTime = ((Date) args[1]).getTime();
+
+                Integer numberOfMeasurements = (Integer) args[2];
+                Float minValue = (Float) args[3];
+                Float maxValue = (Float) args[4];
+                Float mean = (Float) args[5];
+                Float variance = (Float) args[6];
+
+                ModelConnection mc = rippleSession.getModelConnection();
+                try {
+                    rippleSession.push(mc.valueOf(startTime),
+                            mc.valueOf(endTime),
+                            mc.valueOf(numberOfMeasurements),
+                            mc.valueOf(minValue),
+                            mc.valueOf(maxValue),
+                            mc.valueOf(variance),
+                            mc.valueOf(mean));
+                } catch (RippleException e) {
+                    Log.e(Brainstem.TAG, "Ripple error while pushing photoresistor observation: " + e.getMessage());
+                    e.printStackTrace(System.err);
+                }
+            }
+        });
+
+        oscDispatcher.register(EXO_TT_PING_REPLY, new OSCMessageHandler() {
             public void handle(OSCMessage message) {
                 // note: argument is ignored for now; in future, it could be used to synchronize clocks
 
@@ -169,6 +238,50 @@ public class TypeatronControl extends BluetoothDeviceControl {
             Log.i(Brainstem.TAG, (isAlive ? "" : "NOT ") + "writing '" + symbol + "' to Emacs...");
             source.write(symbol.getBytes());
         }
+    }
+
+    private void handleLineOfText(final String text) throws RippleException {
+        brainstem.getToaster().makeText("typed: " + text);
+
+        /*
+        // TODO: this should be controlled by a primitive
+        sendMorseCommand(text);
+
+        RippleSession ripple = brainstem.getRippleSession();
+        RippleValue value = ripple.getModelConnection().valueOf(text);
+        brainstem.getRippleSession().push(value);
+        */
+    }
+
+    // feedback to the Typeatron whenever mode changes
+    public void sendModeInfo() {
+        OSCMessage m = new OSCMessage(EXO_TT_MODE);
+        m.addArgument(currentMode.name());
+        send(m);
+    }
+
+    public void sendMorseCommand(final String text) {
+        OSCMessage m = new OSCMessage(EXO_TT_MORSE);
+        m.addArgument(text);
+        send(m);
+    }
+
+    public void sendPhotoresistorGetCommand() {
+        OSCMessage m = new OSCMessage(EXO_TT_PHOTO_GET);
+        send(m);
+    }
+
+    /**
+     * @param time the duration of the signal in millseconds (valid values range from 1 to 60000)
+     */
+    public void sendVibrateCommand(final int time) {
+        if (time < 0 || time > 60000) {
+            throw new IllegalArgumentException("vibration interval too short or too long: " + time);
+        }
+
+        OSCMessage m = new OSCMessage(EXO_TT_VIBR);
+        m.addArgument(time);
+        send(m);
     }
 
     private void addChord(final String sequence,
@@ -403,7 +516,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
         }
     }
 
-    private void buttonReleased(int buttonIndex) throws IOException {
+    private void buttonReleased(int buttonIndex) throws IOException, RippleException {
         totalButtonsCurrentlyPressed--;
 
         buttonEvent(buttonIndex);
@@ -413,6 +526,8 @@ public class TypeatronControl extends BluetoothDeviceControl {
             if (null != currentButtonState) {
                 String symbol = currentButtonState.symbol;
                 if (null != symbol) {
+                    rippleREPL.handle(symbol, currentModifier, currentMode);
+
                     String mod = modifySymbol(symbol);
                     //toaster.makeText("typed: " + mod);
                     if (null != brainModeWrapper) {
@@ -423,29 +538,16 @@ public class TypeatronControl extends BluetoothDeviceControl {
                         String text = currentLineOfText.toString();
                         currentLineOfText = new StringBuilder();
 
-                        OSCMessage m = new OSCMessage("/exo/tt/morse");
-                        m.addArgument(text);
-                        send(m);
-
-                        brainstem.getToaster().makeText("typed: " + text);
+                        handleLineOfText(text);
                     } else {
                         currentLineOfText.append(symbol);
                     }
-                    /*
-                    if ("v".equals(symbol)) {
-                        OSCMessage m = new OSCMessage("/exo/tt/vibro");
-                        m.addArgument(1000);
-                        send(m);
-                    }*/
                 } else {
                     Mode mode = currentButtonState.mode;
                     if (null != mode) {
                         currentMode = mode;
 
-                        // feedback to the Typeatron whenever mode changes
-                        OSCMessage m = new OSCMessage("/exo/tt/vibro/mode");
-                        m.addArgument(mode.name());
-                        send(m);
+                        sendModeInfo();
 
                         brainstem.getToaster().makeText("entered mode: " + mode);
                     }
@@ -461,7 +563,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
         }
     }
 
-    private void inputReceived(byte[] input) throws IOException {
+    private void inputReceived(byte[] input) throws IOException, RippleException {
         for (int i = 0; i < 5; i++) {
             // Generally, at most one button should change per time step
             // However, if two buttons change state, it is an arbitrary choice w.r.t. which one changed first
@@ -476,4 +578,5 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
         lastInput = input;
     }
+
 }

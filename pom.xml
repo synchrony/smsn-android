@@ -22,13 +22,19 @@
     </properties>
 
     <dependencies>
-        <!-- temporary -->
+        <!-- temporary, to prevent NoClassDefFoundError under MemoryStore -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.6.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.android</groupId>
+            <artifactId>android</artifactId>
+            <version>2.2.1</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>net.fortytwo.extendo</groupId>
             <artifactId>extendo-brain</artifactId>
@@ -67,7 +73,29 @@
             <groupId>net.fortytwo.extendo</groupId>
             <artifactId>extendo-p2p</artifactId>
             <version>${extendo.version}</version>
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+        <dependency>
+            <groupId>net.fortytwo.ripple</groupId>
+            <artifactId>ripple-core</artifactId>
+            <version>${ripple.version}</version>
             <exclusions>
+                <!-- conflict with extendo-p2p -->
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+                <!-- conflict with Android -->
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <!-- conflict with Android -->
                 <exclusion>
                     <groupId>org.apache.httpcomponents</groupId>
                     <artifactId>httpclient</artifactId>
@@ -83,12 +111,6 @@
             <groupId>net.fortytwo.extendo</groupId>
             <artifactId>flashcards</artifactId>
             <version>${extendo.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.android</groupId>
-            <artifactId>android</artifactId>
-            <version>2.2.1</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
@@ -136,7 +158,7 @@
             <plugin>
                 <groupId>com.jayway.maven.plugins.android.generation2</groupId>
                 <artifactId>android-maven-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.8.2</version>
                 <configuration>
                     <sdk>
                         <!-- platform or api level (api level 4 = platform 1.6)-->
