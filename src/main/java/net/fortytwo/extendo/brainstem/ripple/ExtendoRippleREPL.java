@@ -17,6 +17,7 @@ public class ExtendoRippleREPL {
     private final RippleSession session;
     private StringBuilder currentLineOfText;
 
+
     private final RippleValue morse;
     private final RippleValue vibro;
     private final RippleValue photo;

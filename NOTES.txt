@@ -15,5 +15,3 @@ mvn clean install \
 # uninstall
 adb uninstall net.fortytwo.extendo
 
-# create Amarino Maven dependency
-mvn install:install-file -DgroupId=at.abraxas -DartifactId=amarino -Dversion=2.0 -Dpackaging=jar -DcreateChecksum=true -Dfile=AmarinoLibrary.jar

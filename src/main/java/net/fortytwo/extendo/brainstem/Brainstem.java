@@ -53,9 +53,8 @@ public class Brainstem {
 
     public static final String
             PROP_AGENTURI = "net.fortytwo.extendo.agentUri",
-            PROP_REXSTER_HOST = "net.fortytwo.extendo.rexster.host",
-            PROP_REXSTER_PORT = "net.fortytwo.extendo.rexster.port",
-            PROP_REXSTER_GRAPH = "net.fortytwo.extendo.rexster.graph",
+            PROP_REXSTER_URL = "net.fortytwo.extendo.rexsterUrl",
+            PROP_REXSTER_GRAPH = "net.fortytwo.extendo.rexsterGraph",
             PROP_EXTENDOHAND_ADDRESS = "net.fortytwo.extendo.hand.address",
             PROP_TYPEATRON_ADDRESS = "net.fortytwo.extendo.typeatron.address";
 
@@ -200,15 +199,14 @@ public class Brainstem {
         }
         */
 
-        String rexsterHost = configuration.getProperty(PROP_REXSTER_HOST);
-        String rexsterPort = configuration.getProperty(PROP_REXSTER_PORT);
+        String rexsterUrl = configuration.getProperty(PROP_REXSTER_URL);
         String rexsterGraph = configuration.getProperty(PROP_REXSTER_GRAPH);
-        if (null == rexsterHost || null == rexsterPort || null == rexsterGraph) {
+        if (null == rexsterUrl || null == rexsterGraph) {
             throw new BrainstemException("Rexster endpoint info is missing from configuration: use "
-                    + PROP_REXSTER_HOST + ", " + PROP_REXSTER_PORT + ", and " + PROP_REXSTER_GRAPH);
+                    + PROP_REXSTER_URL + " and " + PROP_REXSTER_GRAPH);
         }
 
-        String endpoint = "http://" + rexsterHost + ":" + rexsterPort + "/graphs/" + rexsterGraph + "/extendo/";
+        String endpoint = rexsterUrl + "/graphs/" + rexsterGraph + "/extendo/";
 
         EventStackProxy proxy = new EventStackProxy(endpoint + "push-event");
 
