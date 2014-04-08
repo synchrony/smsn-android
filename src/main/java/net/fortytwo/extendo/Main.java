@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -26,12 +27,13 @@ import net.fortytwo.extendo.events.EventsActivity;
 import net.fortytwo.extendo.flashcards.android.Flashcards4Android;
 import net.fortytwo.extendo.ping.BrainPingSettings;
 
+import java.util.Locale;
 import java.util.Set;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */
-public class Main extends Activity {
+public class Main extends Activity implements TextToSpeech.OnInitListener  {
     private EditText editor;
 
     private final Activity thisActivity = this;
@@ -39,7 +41,7 @@ public class Main extends Activity {
     private final Brainstem brainstem;
 
     private final Toaster toaster;
-
+    private Speaker speaker;
 
     public Main() throws ExtendoBrain.ExtendoBrainException {
         toaster = new Toaster();
@@ -70,6 +72,7 @@ public class Main extends Activity {
         // want to do various programmatic things with it.
         editor = (EditText) findViewById(R.id.editor);
 
+        speaker = new Speaker(new TextToSpeech(this, this));
 
         // Force the service to start.
         //     startService(new Intent(this, BrainPingService.class));
@@ -99,7 +102,7 @@ public class Main extends Activity {
         editor.setText("testing");
         boolean emacsAvailable = checkForEmacs();
 
-        brainstem.initialize(toaster, editor, emacsAvailable);
+        brainstem.initialize(toaster, speaker, editor, emacsAvailable);
 
         // note: calling this method on demand, when the Brainstem application starts/wakes, gives
         // the user control and avoids draining the battery by repeatedly checking for devices in a
@@ -261,12 +264,50 @@ public class Main extends Activity {
         return emacsAvailable;
     }
 
+    // TextToSpeech.OnInitListener#init
+    public void onInit(int status) {
+        if (status == TextToSpeech.SUCCESS) {
+
+            int result = speaker.getTextToSpeech().setLanguage(Locale.US);
+
+            if (result == TextToSpeech.LANG_MISSING_DATA
+                    || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.e("TTS", "This Language is not supported");
+            } else {
+                speaker.speak("text-to-speech ready");
+            }
+        } else {
+            Log.e("TTS", "Initilization Failed!");
+        }
+    }
+
     // a helper object which allows Toasts to be displayed from non-UI threads
     public class Toaster {
         public void makeText(final String message) {
             Main.this.runOnUiThread(new Runnable() {
                 public void run() {
                     Toast.makeText(Main.this, message, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    public class Speaker {
+        private final TextToSpeech textToSpeech;
+
+        public Speaker(TextToSpeech textToSpeech) {
+            this.textToSpeech = textToSpeech;
+        }
+
+        public TextToSpeech getTextToSpeech() {
+            return textToSpeech;
+        }
+
+        public void speak(final String text) {
+            // note: unknown whether (but strongly suspected that) runOnUiThread is necessary here
+            Main.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
                 }
             });
         }

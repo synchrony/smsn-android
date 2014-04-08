@@ -271,6 +271,10 @@ public class TypeatronControl extends BluetoothDeviceControl {
         send(m);
     }
 
+    public void speak(final String text) {
+        brainstem.getSpeaker().speak(text);
+    }
+
     /**
      * @param time the duration of the signal in millseconds (valid values range from 1 to 60000)
      */

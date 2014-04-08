@@ -5,6 +5,7 @@ import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
 import net.fortytwo.extendo.brainstem.ripple.lib.GetLightLevelMapping;
 import net.fortytwo.extendo.brainstem.ripple.lib.MorseMapping;
+import net.fortytwo.extendo.brainstem.ripple.lib.SpeakMapping;
 import net.fortytwo.extendo.brainstem.ripple.lib.VibrateMapping;
 import net.fortytwo.ripple.RippleException;
 import net.fortytwo.ripple.libs.stack.Pop;
@@ -18,18 +19,16 @@ public class ExtendoRippleREPL {
     private StringBuilder currentLineOfText;
 
 
-    private final RippleValue morse;
-    private final RippleValue vibro;
-    private final RippleValue photo;
-    private final RippleValue pop;
+    private final RippleValue morse, photo, pop, speak, vibro;
 
     public ExtendoRippleREPL(final RippleSession session,
                              final TypeatronControl typeatron) throws RippleException {
         this.session = session;
         morse = new ControlValue(new MorseMapping(typeatron));
-        vibro = new ControlValue(new VibrateMapping(typeatron));
         photo = new ControlValue(new GetLightLevelMapping(typeatron));
         pop = new ControlValue(new Pop());
+        speak = new ControlValue(new SpeakMapping(typeatron));
+        vibro = new ControlValue(new VibrateMapping(typeatron));
 
         newLine();
     }
@@ -54,6 +53,9 @@ public class ExtendoRippleREPL {
                 } else if (symbol.equals("p")) {
                     Log.i(Brainstem.TAG, "push the pop mapping");
                     session.push(pop);
+                } else if (symbol.equals("s")) {
+                    Log.i(Brainstem.TAG, "pushing the speak mapping");
+                    session.push(speak);
                 } else if (symbol.equals("v")) {
                     Log.i(Brainstem.TAG, "pushing the sendVibrateCommand operator");
                     session.push(vibro);

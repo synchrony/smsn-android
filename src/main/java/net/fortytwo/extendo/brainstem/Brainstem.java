@@ -77,6 +77,7 @@ public class Brainstem {
     private final RippleSession rippleSession;
 
     private Main.Toaster toaster;
+    private Main.Speaker speaker;
     private boolean emacsAvailable;
 
     private static final Brainstem INSTANCE;
@@ -126,9 +127,11 @@ public class Brainstem {
      * such as (currently) the text editor
      */
     public void initialize(final Main.Toaster toaster,
+                           final Main.Speaker speaker,
                            final EditText textEditor,
                            final boolean emacsAvailable) {
         this.toaster = toaster;
+        this.speaker = speaker;
         this.textEditor = textEditor;
         this.emacsAvailable = emacsAvailable;
     }
@@ -147,6 +150,10 @@ public class Brainstem {
 
     public Main.Toaster getToaster() {
         return toaster;
+    }
+
+    public Main.Speaker getSpeaker() {
+        return speaker;
     }
 
     public void disconnect(final Context context) {
