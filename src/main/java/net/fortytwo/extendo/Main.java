@@ -33,13 +33,13 @@ import java.util.Set;
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */
-public class Main extends Activity implements TextToSpeech.OnInitListener  {
-    private EditText editor;
+public class Main extends Activity implements TextToSpeech.OnInitListener {
 
     private final Activity thisActivity = this;
 
     private final Brainstem brainstem;
 
+    private Texter texter;
     private final Toaster toaster;
     private Speaker speaker;
 
@@ -70,7 +70,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener  {
 
         // Find the text editor view inside the layout, because we
         // want to do various programmatic things with it.
-        editor = (EditText) findViewById(R.id.editor);
+        texter = new Texter((EditText) findViewById(R.id.editor));
 
         speaker = new Speaker(new TextToSpeech(this, this));
 
@@ -99,10 +99,10 @@ public class Main extends Activity implements TextToSpeech.OnInitListener  {
         Log.i(Brainstem.TAG, "Brainstem start()");
         super.onStart();
 
-        editor.setText("testing");
+        texter.setText("testing");
         boolean emacsAvailable = checkForEmacs();
 
-        brainstem.initialize(toaster, speaker, editor, emacsAvailable);
+        brainstem.initialize(toaster, speaker, texter, emacsAvailable);
 
         // note: calling this method on demand, when the Brainstem application starts/wakes, gives
         // the user control and avoids draining the battery by repeatedly checking for devices in a
@@ -183,7 +183,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener  {
 
         public void onClick(View v) {
 
-            editor.setText("simulating gesture event");
+            texter.setText("simulating gesture event");
             brainstem.simulateGestureEvent();
 
             /*
@@ -200,7 +200,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener  {
     private OnClickListener pingListener = new OnClickListener() {
 
         public void onClick(View v) {
-            editor.setText("pinging facilitator connection");
+            texter.setText("pinging facilitator connection");
             brainstem.pingFacilitatorConnection();
         }
     };
@@ -208,7 +208,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener  {
     private OnClickListener bluetoothPingListener = new OnClickListener() {
 
         public void onClick(View v) {
-            editor.setText("pinging bluetooth device");
+            texter.setText("pinging bluetooth device");
             brainstem.pingExtendoHand();
         }
     };
@@ -246,9 +246,9 @@ public class Main extends Activity implements TextToSpeech.OnInitListener  {
         boolean emacsAvailable = null != emacs;
 
         if (emacsAvailable) {
-            editor.setText("Emacs is running");
+            texter.setText("Emacs is running");
         } else {
-            editor.setText("Emacs is not running");
+            texter.setText("Emacs is not running");
         }
 
         /*
@@ -278,6 +278,22 @@ public class Main extends Activity implements TextToSpeech.OnInitListener  {
             }
         } else {
             Log.e("TTS", "Initilization Failed!");
+        }
+    }
+
+    public class Texter {
+        private final EditText editor;
+
+        public Texter(final EditText editor) {
+            this.editor = editor;
+        }
+
+        public void setText(final String text) {
+            Main.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    editor.setText(text);
+                }
+            });
         }
     }
 

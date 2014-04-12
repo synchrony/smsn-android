@@ -25,27 +25,26 @@ import java.util.Map;
 public class TypeatronControl extends BluetoothDeviceControl {
 
     // outbound addresses
-    private final String
+    private static final String
             EXO_TT_MODE = "/exo/tt/mode",
             EXO_TT_MORSE = "/exo/tt/morse",
             EXO_TT_PHOTO_GET = "/exo/tt/photo/get",
             EXO_TT_VIBR = "/exo/tt/vibr";
 
     // inbound addresses
-    private final String
+    private static final String
             EXO_TT_ERROR = "/exo/tt/error",
             EXO_TT_INFO = "/exo/tt/info",
             EXO_TT_KEYS = "/exo/tt/keys",
             EXO_TT_PHOTO_DATA = "/exo/tt/photo/data",
             EXO_TT_PING_REPLY = "/exo/tt/ping/reply";
 
-
     private final Brainstem brainstem;
 
     private byte[] lastInput;
 
     public enum Mode {
-        LowercaseText, UppercaseText, Punctuation, Numeric, Hardware, Mash;
+        Text, Numeric, Hardware, Mash;
 
         public boolean isTextEntryMode() {
             return this != Hardware && this != Mash;
@@ -76,15 +75,12 @@ public class TypeatronControl extends BluetoothDeviceControl {
     private Map<Mode, StateNode> rootStates;
 
     private Mode currentMode;
-    private Modifier currentModifier;
     private StateNode currentButtonState;
     private int totalButtonsCurrentlyPressed;
 
     private final BrainModeClientWrapper brainModeWrapper;
     private final RippleSession rippleSession;
     private final ExtendoRippleREPL rippleREPL;
-
-    private StringBuilder currentLineOfText = new StringBuilder();
 
     public TypeatronControl(final String address,
                             final OSCDispatcher oscDispatcher,
@@ -117,7 +113,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
             public void handle(OSCMessage message) {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
-                    brainstem.getToaster().makeText("\ninfo message from Typeatron: " + args[0]);
+                    //brainstem.getToaster().makeText("\ninfo message from Typeatron: " + args[0]);
                     Log.i(Brainstem.TAG, "info message from Typeatron " + address + ": " + args[0]);
                 } else {
                     Log.e(Brainstem.TAG, "wrong number of arguments in Typeatron info message");
@@ -135,7 +131,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
                         Log.e(Brainstem.TAG, "failed to relay Typeatron input");
                         e.printStackTrace(System.err);
                     }
-                    brainstem.getToaster().makeText("Typeatron keys: " + args[0] + " (" + totalButtonsCurrentlyPressed + " pressed)");
+                    //brainstem.getToaster().makeText("Typeatron keys: " + args[0] + " (" + totalButtonsCurrentlyPressed + " pressed)");
                 } else {
                     brainstem.getToaster().makeText("Typeatron control error (wrong # of args)");
                 }
@@ -240,19 +236,6 @@ public class TypeatronControl extends BluetoothDeviceControl {
         }
     }
 
-    private void handleLineOfText(final String text) throws RippleException {
-        brainstem.getToaster().makeText("typed: " + text);
-
-        /*
-        // TODO: this should be controlled by a primitive
-        sendMorseCommand(text);
-
-        RippleSession ripple = brainstem.getRippleSession();
-        RippleValue value = ripple.getModelConnection().valueOf(text);
-        brainstem.getRippleSession().push(value);
-        */
-    }
-
     // feedback to the Typeatron whenever mode changes
     public void sendModeInfo() {
         OSCMessage m = new OSCMessage(EXO_TT_MODE);
@@ -288,11 +271,11 @@ public class TypeatronControl extends BluetoothDeviceControl {
         send(m);
     }
 
-    private void addChord(final String sequence,
+    private void addChord(final Mode inputMode,
+                          final String sequence,
                           final Mode outputMode,
                           final Modifier outputModifier,
-                          final String outputSymbol,
-                          final Mode inputMode) {
+                          final String outputSymbol) {
         StateNode cur = rootStates.get(inputMode);
         int l = sequence.length();
         for (int j = 0; j < l; j++) {
@@ -330,9 +313,9 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
         if (null != cur.mode && null != cur.symbol) {
             throw new IllegalStateException("sequence has been assigned both an output symbol and an output mode: " + sequence);
-        } else if (null != cur.modifier && Modifier.None != cur.modifier && (null != cur.mode || null != cur.symbol)) {
-            throw new IllegalStateException("sequence has output modifier and also output symbol or mode");
-        }
+        } //else if (null != cur.modifier && Modifier.None != cur.modifier && (null != cur.mode || null != cur.symbol)) {
+          //  throw new IllegalStateException("sequence has output modifier and also output symbol or mode");
+        //}
     }
 
     private void setupParser() {
@@ -345,153 +328,182 @@ public class TypeatronControl extends BluetoothDeviceControl {
             rootStates.put(m, new StateNode());
         }
 
-        currentMode = Mode.LowercaseText;
-        currentModifier = Modifier.None;
+        currentMode = Mode.Text;
         currentButtonState = rootStates.get(currentMode);
 
+        // TODO: is mode switching so important?  Perhaps we can use these chords for something else
         // mode entry from default mode
-        addChord("1221", null, Modifier.Control, null, Mode.LowercaseText);
-        addChord("1212", Mode.Hardware, null, null, Mode.LowercaseText);
-        addChord("1331", Mode.Punctuation, null, null, Mode.LowercaseText);
-        addChord("1313", Mode.Numeric, null, null, Mode.LowercaseText);
-        addChord("1441", Mode.UppercaseText, null, null, Mode.LowercaseText);
-        addChord("1414", Mode.LowercaseText, null, null, Mode.LowercaseText);  // a no-op
-        addChord("1551", Mode.Mash, Modifier.None, null, Mode.LowercaseText);
+        addChord(Mode.Text, "1221", null, Modifier.Control, null);
+        addChord(Mode.Text, "1212", Mode.Hardware, null, null);
+        // 1331 unassigned
+        addChord(Mode.Text, "1313", Mode.Numeric, null, null);
+        // 1441 unassigned
+        addChord(Mode.Text, "1414", Mode.Text, null, null);  // a no-op
+        addChord(Mode.Text, "1551", Mode.Mash, Modifier.None, null);
         // 1515 unassigned
 
         // return to default mode from anywhere other than mash mode
         for (Mode m : Mode.values()) {
             if (m != Mode.Mash) {
-                addChord("11", Mode.LowercaseText, Modifier.None, null, m);
+                addChord(m, "123321", Mode.Text, Modifier.None, null);
             }
         }
 
         // return from mash mode
-        addChord("1234554321", Mode.LowercaseText, Modifier.None, null, Mode.Mash);
+        addChord(Mode.Mash, "1234554321", Mode.Text, Modifier.None, null);
 
-        // space, newline, delete, escape available in all of the text-entry modes
-        for (Mode m : new Mode[]{Mode.LowercaseText, Mode.UppercaseText, Mode.Punctuation, Mode.Numeric}) {
-            addChord("22", null, null, " ", m);
+        // space, newline, delete, escape available in both of the text-entry modes
+        for (Mode m : new Mode[]{Mode.Text, Mode.Numeric}) {
+            // control-space codes for the Typeatron dictionary operator
+            addChord(m, "11", null, Modifier.Control, " ");
+
+            addChord(m, "22", null, null, " ");
             //addChord("22", null, null, "SPACE", m);
-            addChord("33", null, null, "\n", m);
+            addChord(m, "33", null, null, "\n");
             //addChord("33", null, null, "RET", m);
-            addChord("44", null, null, "DEL", m);
-            addChord("55", null, null, "ESC", m);
+            addChord(m, "44", null, null, "DEL");
+            addChord(m, "55", null, null, "ESC");
         }
 
-        addChord("2112", null, null, "a", Mode.LowercaseText);
-        addChord("2112", null, null, "A", Mode.UppercaseText);
-        addChord("2112", null, null, "'", Mode.Punctuation);
+        addChord(Mode.Text, "2112", null, null, "a");
+        addChord(Mode.Text, "213312", null, Modifier.Control, "a");
+        addChord(Mode.Text, "214412", null, null, "A");
+        addChord(Mode.Text, "215512", null, null, "'");
 
         // 2121 unassigned
 
-        addChord("2332", null, null, "e", Mode.LowercaseText);
-        addChord("2332", null, null, "E", Mode.UppercaseText);
-        addChord("2332", null, null, "=", Mode.Punctuation);
+        addChord(Mode.Text, "2332", null, null, "e");
+        addChord(Mode.Text, "231132", null, Modifier.Control, "e");
+        addChord(Mode.Text, "234432", null, null, "E");
+        addChord(Mode.Text, "235532", null, null, "=");
 
-        addChord("2323", null, null, "w", Mode.LowercaseText);
-        addChord("2323", null, null, "W", Mode.UppercaseText);
-        addChord("2323", null, null, "@", Mode.Punctuation);
+        addChord(Mode.Text, "2323", null, null, "w");
+        addChord(Mode.Text, "231123", null, Modifier.Control, "w");
+        addChord(Mode.Text, "234423", null, null, "W");
+        addChord(Mode.Text, "235523", null, null, "@");
 
-        addChord("2442", null, null, "i", Mode.LowercaseText);
-        addChord("2442", null, null, "I", Mode.UppercaseText);
-        addChord("2442", null, null, ":", Mode.Punctuation);
+        addChord(Mode.Text, "2442", null, null, "i");
+        addChord(Mode.Text, "241142", null, Modifier.Control, "i");
+        addChord(Mode.Text, "243342", null, null, "I");
+        addChord(Mode.Text, "245542", null, null, ":");
 
-        addChord("2424", null, null, "y", Mode.LowercaseText);
-        addChord("2424", null, null, "Y", Mode.UppercaseText);
-        addChord("2424", null, null, "&", Mode.Punctuation);
+        addChord(Mode.Text, "2424", null, null, "y");
+        addChord(Mode.Text, "241124", null, Modifier.Control, "y");
+        addChord(Mode.Text, "243324", null, null, "Y");
+        addChord(Mode.Text, "245524", null, null, "&");
 
-        addChord("2552", null, null, "o", Mode.LowercaseText);
-        addChord("2552", null, null, "O", Mode.UppercaseText);
-        // no punctuation associated with "o"
+        addChord(Mode.Text, "2552", null, null, "o");
+        addChord(Mode.Text, "251152", null, Modifier.Control, "o");
+        addChord(Mode.Text, "253352", null, null, "O");
+        // there is no punctuation associated with "o"
 
-        addChord("2525", null, null, "u", Mode.LowercaseText);
-        addChord("2525", null, null, "U", Mode.UppercaseText);
-        addChord("2525", null, null, "_", Mode.Punctuation);
+        addChord(Mode.Text, "2525", null, null, "u");
+        addChord(Mode.Text, "251125", null, Modifier.Control, "u");
+        addChord(Mode.Text, "253325", null, null, "U");
+        addChord(Mode.Text, "254425", null, null, "_");
 
-        addChord("3113", null, null, "p", Mode.LowercaseText);
-        addChord("3113", null, null, "P", Mode.UppercaseText);
-        addChord("3113", null, null, "+", Mode.Punctuation);
+        addChord(Mode.Text, "3113", null, null, "p");
+        addChord(Mode.Text, "312213", null, Modifier.Control, "p");
+        addChord(Mode.Text, "314413", null, null, "P");
+        addChord(Mode.Text, "315513", null, null, "+");
 
-        addChord("3131", null, null, "b", Mode.LowercaseText);
-        addChord("3131", null, null, "B", Mode.UppercaseText);
-        addChord("3131", null, null, "\\", Mode.Punctuation);
+        addChord(Mode.Text, "3131", null, null, "b");
+        addChord(Mode.Text, "312231", null, Modifier.Control, "b");
+        addChord(Mode.Text, "314431", null, null, "B");
+        addChord(Mode.Text, "315531", null, null, "\\");
 
-        addChord("3223", null, null, "t", Mode.LowercaseText);
-        addChord("3223", null, null, "T", Mode.UppercaseText);
-        addChord("3223", null, null, "~", Mode.Punctuation);
+        addChord(Mode.Text, "3223", null, null, "t");
+        addChord(Mode.Text, "321123", null, Modifier.Control, "t");
+        addChord(Mode.Text, "324423", null, null, "T");
+        addChord(Mode.Text, "325523", null, null, "~");
 
-        addChord("3232", null, null, "d", Mode.LowercaseText);
-        addChord("3232", null, null, "D", Mode.UppercaseText);
-        addChord("3232", null, null, "$", Mode.Punctuation);
+        addChord(Mode.Text, "3232", null, null, "d");
+        addChord(Mode.Text, "321132", null, Modifier.Control, "d");
+        addChord(Mode.Text, "324432", null, null, "D");
+        addChord(Mode.Text, "325532", null, null, "$");
 
-        addChord("3443", null, null, "k", Mode.LowercaseText);
-        addChord("3443", null, null, "K", Mode.UppercaseText);
-        addChord("3443", null, null, "*", Mode.Punctuation);
+        addChord(Mode.Text, "3443", null, null, "k");
+        addChord(Mode.Text, "341143", null, Modifier.Control, "k");
+        addChord(Mode.Text, "342243", null, null, "K");
+        addChord(Mode.Text, "345543", null, null, "*");
 
-        addChord("3434", null, null, "g", Mode.LowercaseText);
-        addChord("3434", null, null, "G", Mode.UppercaseText);
-        addChord("3434", null, null, "`", Mode.Punctuation);
+        addChord(Mode.Text, "3434", null, null, "g");
+        addChord(Mode.Text, "341134", null, Modifier.Control, "g");
+        addChord(Mode.Text, "342234", null, null, "G");
+        addChord(Mode.Text, "345534", null, null, "`");
 
-        addChord("3553", null, null, "q", Mode.LowercaseText);
-        addChord("3553", null, null, "Q", Mode.UppercaseText);
-        addChord("3553", null, null, "?", Mode.Punctuation);
+        addChord(Mode.Text, "3553", null, null, "q");
+        addChord(Mode.Text, "351153", null, Modifier.Control, "q");
+        addChord(Mode.Text, "352253", null, null, "Q");
+        addChord(Mode.Text, "354453", null, null, "?");
 
         // 3535 unassigned
 
-        addChord("4114", null, null, "f", Mode.LowercaseText);
-        addChord("4114", null, null, "F", Mode.UppercaseText);
-        addChord("4114", null, null, ".", Mode.Punctuation);
+        addChord(Mode.Text, "4114", null, null, "f");
+        addChord(Mode.Text, "412214", null, Modifier.Control, "f");
+        addChord(Mode.Text, "413314", null, null, "F");
+        addChord(Mode.Text, "415514", null, null, ".");
 
-        addChord("4141", null, null, "v", Mode.LowercaseText);
-        addChord("4141", null, null, "V", Mode.UppercaseText);
-        addChord("4141", null, null, "|", Mode.Punctuation);
+        addChord(Mode.Text, "4141", null, null, "v");
+        addChord(Mode.Text, "412241", null, Modifier.Control, "v");
+        addChord(Mode.Text, "413341", null, null, "V");
+        addChord(Mode.Text, "415541", null, null, "|");
 
-        addChord("4224", null, null, "c", Mode.LowercaseText);
-        addChord("4224", null, null, "C", Mode.UppercaseText);
-        addChord("4224", null, null, ",", Mode.Punctuation);
+        addChord(Mode.Text, "4224", null, null, "c");
+        addChord(Mode.Text, "421124", null, Modifier.Control, "c");
+        addChord(Mode.Text, "423324", null, null, "C");
+        addChord(Mode.Text, "425524", null, null, ",");
 
-        addChord("4242", null, null, "j", Mode.LowercaseText);
-        addChord("4242", null, null, "J", Mode.UppercaseText);
-        addChord("4242", null, null, ";", Mode.Punctuation);
+        addChord(Mode.Text, "4242", null, null, "j");
+        addChord(Mode.Text, "421142", null, Modifier.Control, "j");
+        addChord(Mode.Text, "423342", null, null, "J");
+        addChord(Mode.Text, "425542", null, null, ";");
 
-        addChord("4334", null, null, "s", Mode.LowercaseText);
-        addChord("4334", null, null, "S", Mode.UppercaseText);
-        addChord("4334", null, null, "/", Mode.Punctuation);
+        addChord(Mode.Text, "4334", null, null, "s");
+        addChord(Mode.Text, "431134", null, Modifier.Control, "s");
+        addChord(Mode.Text, "432234", null, null, "S");
+        addChord(Mode.Text, "435534", null, null, "/");
 
-        addChord("4343", null, null, "z", Mode.LowercaseText);
-        addChord("4343", null, null, "Z", Mode.UppercaseText);
-        addChord("4343", null, null, "%", Mode.Punctuation);
+        addChord(Mode.Text, "4343", null, null, "z");
+        addChord(Mode.Text, "431143", null, Modifier.Control, "z");
+        addChord(Mode.Text, "432243", null, null, "Z");
+        addChord(Mode.Text, "435543", null, null, "%");
 
-        addChord("4554", null, null, "h", Mode.LowercaseText);
-        addChord("4554", null, null, "H", Mode.UppercaseText);
-        addChord("4554", null, null, "^", Mode.Punctuation);
+        addChord(Mode.Text, "4554", null, null, "h");
+        addChord(Mode.Text, "451154", null, Modifier.Control, "h");
+        addChord(Mode.Text, "452254", null, null, "H");
+        addChord(Mode.Text, "453354", null, null, "^");
 
-        addChord("4545", null, null, "x", Mode.LowercaseText);
-        addChord("4545", null, null, "X", Mode.UppercaseText);
-        addChord("4545", null, null, "!", Mode.Punctuation);
+        addChord(Mode.Text, "4545", null, null, "x");
+        addChord(Mode.Text, "451145", null, Modifier.Control, "x");
+        addChord(Mode.Text, "452245", null, null, "X");
+        addChord(Mode.Text, "453345", null, null, "!");
 
-        addChord("5115", null, null, "m", Mode.LowercaseText);
-        addChord("5115", null, null, "M", Mode.UppercaseText);
-        addChord("5115", null, null, "-", Mode.Punctuation);
+        addChord(Mode.Text, "5115", null, null, "m");
+        addChord(Mode.Text, "512215", null, Modifier.Control, "m");
+        addChord(Mode.Text, "513315", null, null, "M");
+        addChord(Mode.Text, "514415", null, null, "-");
 
         // 5151 unassigned
 
-        addChord("5225", null, null, "n", Mode.LowercaseText);
-        addChord("5225", null, null, "N", Mode.UppercaseText);
-        addChord("5225", null, null, "#", Mode.Punctuation);
+        addChord(Mode.Text, "5225", null, null, "n");
+        addChord(Mode.Text, "521125", null, Modifier.Control, "n");
+        addChord(Mode.Text, "523325", null, null, "N");
+        addChord(Mode.Text, "524425", null, null, "#");
 
         // 5252 unassigned
 
-        addChord("5335", null, null, "l", Mode.LowercaseText);
-        addChord("5335", null, null, "L", Mode.UppercaseText);
-        addChord("5335", null, null, "\"", Mode.Punctuation);
+        addChord(Mode.Text, "5335", null, null, "l");
+        addChord(Mode.Text, "531135", null, Modifier.Control, "l");
+        addChord(Mode.Text, "532235", null, null, "L");
+        addChord(Mode.Text, "534435", null, null, "\"");
 
         // 5353 unassigned
 
-        addChord("5445", null, null, "r", Mode.LowercaseText);
-        addChord("5445", null, null, "R", Mode.UppercaseText);
-        // no punctuation associated with "r" (reserved for right-handed quotes)
+        addChord(Mode.Text, "5445", null, null, "r");
+        addChord(Mode.Text, "541145", null, Modifier.Control, "r");
+        addChord(Mode.Text, "542245", null, null, "R");
+        // no punctuation associated with "r" (this slot is reserved for right-handed quotes)
 
         // 5454 unassigned
     }
@@ -509,8 +521,9 @@ public class TypeatronControl extends BluetoothDeviceControl {
         buttonEvent(buttonIndex);
     }
 
-    private String modifySymbol(final String symbol) {
-        switch (currentModifier) {
+    private String modifySymbol(final String symbol,
+                                final Modifier modifier) {
+        switch (modifier) {
             case Control:
                 return symbol.length() == 1 ? "<C-" + symbol + ">" : "<" + symbol + ">";
             case None:
@@ -520,7 +533,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
         }
     }
 
-    private void buttonReleased(int buttonIndex) throws IOException, RippleException {
+    private void buttonReleased(int buttonIndex) throws IOException {
         totalButtonsCurrentlyPressed--;
 
         buttonEvent(buttonIndex);
@@ -530,35 +543,35 @@ public class TypeatronControl extends BluetoothDeviceControl {
             if (null != currentButtonState) {
                 String symbol = currentButtonState.symbol;
                 if (null != symbol) {
-                    rippleREPL.handle(symbol, currentModifier, currentMode);
+                    Modifier modifier = currentButtonState.modifier;
+                    if (null == modifier) {
+                        modifier = Modifier.None;
+                    }
+                    Log.i(Brainstem.TAG, "using modifier: " + modifier);
 
-                    String mod = modifySymbol(symbol);
+                    try {
+                        rippleREPL.handle(symbol, modifier, currentMode);
+                    } catch (RippleException e) {
+                        brainstem.getTexter().setText(e.getMessage());
+                        brainstem.getToaster().makeText("Ripple error: " + e.getMessage());
+                        Log.w(Brainstem.TAG, "Ripple error: " + e.getMessage());
+                        e.printStackTrace(System.err);
+                    }
+
+                    String mod = modifySymbol(symbol, modifier);
                     //toaster.makeText("typed: " + mod);
                     if (null != brainModeWrapper) {
                         brainModeWrapper.write(mod);
                     }
-
-                    if ("\n".equals(symbol)) {
-                        String text = currentLineOfText.toString();
-                        currentLineOfText = new StringBuilder();
-
-                        handleLineOfText(text);
-                    } else {
-                        currentLineOfText.append(symbol);
-                    }
                 } else {
                     Mode mode = currentButtonState.mode;
+                    // this sets the mode for *subsequent* key events
                     if (null != mode) {
                         currentMode = mode;
 
                         sendModeInfo();
 
-                        brainstem.getToaster().makeText("entered mode: " + mode);
-                    }
-                    Modifier modifier = currentButtonState.modifier;
-                    if (null != modifier) {
-                        currentModifier = modifier;
-                        brainstem.getToaster().makeText("using modifier: " + modifier);
+                        Log.i(Brainstem.TAG, "entered mode: " + mode);
                     }
                 }
             }

@@ -3,13 +3,18 @@ package net.fortytwo.extendo.brainstem.ripple;
 import android.util.Log;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
-import net.fortytwo.extendo.brainstem.ripple.lib.GetLightLevelMapping;
 import net.fortytwo.extendo.brainstem.ripple.lib.MorseMapping;
 import net.fortytwo.extendo.brainstem.ripple.lib.SpeakMapping;
-import net.fortytwo.extendo.brainstem.ripple.lib.VibrateMapping;
+import net.fortytwo.extendo.brainstem.ripple.lib.TypeatronDictionaryMapping;
 import net.fortytwo.ripple.RippleException;
+import net.fortytwo.ripple.libs.stack.Dup;
 import net.fortytwo.ripple.libs.stack.Pop;
+import net.fortytwo.ripple.libs.string.Concat;
+import net.fortytwo.ripple.libs.system.Time;
 import net.fortytwo.ripple.model.RippleValue;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
@@ -18,17 +23,21 @@ public class ExtendoRippleREPL {
     private final RippleSession session;
     private StringBuilder currentLineOfText;
 
-
-    private final RippleValue morse, photo, pop, speak, vibro;
+    private final Map<String, RippleValue> shortcutDictionary = new HashMap<String, RippleValue>();
 
     public ExtendoRippleREPL(final RippleSession session,
                              final TypeatronControl typeatron) throws RippleException {
         this.session = session;
-        morse = new ControlValue(new MorseMapping(typeatron));
-        photo = new ControlValue(new GetLightLevelMapping(typeatron));
-        pop = new ControlValue(new Pop());
-        speak = new ControlValue(new SpeakMapping(typeatron));
-        vibro = new ControlValue(new VibrateMapping(typeatron));
+
+        // special value: all primitives are available here, through first-class names rather than shortcuts
+        shortcutDictionary.put(" ", new ControlValue(new TypeatronDictionaryMapping(typeatron)));
+
+        shortcutDictionary.put("c", new ControlValue(new Concat()));
+        shortcutDictionary.put("d", new ControlValue(new Dup()));
+        shortcutDictionary.put("m", new ControlValue(new MorseMapping(typeatron)));
+        shortcutDictionary.put("p", new ControlValue(new Pop()));
+        shortcutDictionary.put("s", new ControlValue(new SpeakMapping(typeatron)));
+        shortcutDictionary.put("t", new ControlValue(new Time()));
 
         newLine();
     }
@@ -40,25 +49,16 @@ public class ExtendoRippleREPL {
     public void handle(final String symbol,
                        final TypeatronControl.Modifier modifier,
                        final TypeatronControl.Mode mode) throws RippleException {
+
         Log.i(Brainstem.TAG, "got a symbol: " + symbol + " in mode " + mode + " with modifier " + modifier);
         if (mode.isTextEntryMode()) {
             if (TypeatronControl.Modifier.Control == modifier) {
                 Log.i(Brainstem.TAG, "got a control character");
-                if (symbol.equals("l")) {
-                    Log.i(Brainstem.TAG, "pushing light level get command");
-                    session.push(photo);
-                } else if (symbol.equals("m")) {
-                    Log.i(Brainstem.TAG, "pushing the Morse operator");
-                    session.push(morse);
-                } else if (symbol.equals("p")) {
-                    Log.i(Brainstem.TAG, "push the pop mapping");
-                    session.push(pop);
-                } else if (symbol.equals("s")) {
-                    Log.i(Brainstem.TAG, "pushing the speak mapping");
-                    session.push(speak);
-                } else if (symbol.equals("v")) {
-                    Log.i(Brainstem.TAG, "pushing the sendVibrateCommand operator");
-                    session.push(vibro);
+                RippleValue controlValue = shortcutDictionary.get(symbol);
+
+                if (null != controlValue) {
+                    Log.i(Brainstem.TAG, "pushing control value: " + controlValue);
+                    session.push(controlValue);
                 }
             } else if (TypeatronControl.Modifier.None == modifier) {
                 if (symbol.equals("\n")) {
@@ -82,5 +82,4 @@ public class ExtendoRippleREPL {
             // TODO: the above is more or less hardware mode; swap this for Emacs mode
         }
     }
-
 }

@@ -63,7 +63,7 @@ public class Brainstem {
     private BluetoothDeviceControl extendoHand;
     private BluetoothDeviceControl typeatron;
 
-    private EditText textEditor;
+    private Main.Texter texter;
 
     private final OSCDispatcher oscDispatcher;
     private final BluetoothManager bluetoothManager;
@@ -128,11 +128,11 @@ public class Brainstem {
      */
     public void initialize(final Main.Toaster toaster,
                            final Main.Speaker speaker,
-                           final EditText textEditor,
+                           final Main.Texter texter,
                            final boolean emacsAvailable) {
         this.toaster = toaster;
         this.speaker = speaker;
-        this.textEditor = textEditor;
+        this.texter = texter;
         this.emacsAvailable = emacsAvailable;
     }
 
@@ -144,8 +144,8 @@ public class Brainstem {
         return rippleSession;
     }
 
-    public EditText getTextEditor() {
-        return textEditor;
+    public Main.Texter getTexter() {
+        return texter;
     }
 
     public Main.Toaster getToaster() {

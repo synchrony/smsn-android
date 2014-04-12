@@ -32,4 +32,9 @@ public class ControlValue implements RippleValue {
     public Type getType() {
         return Type.OPERATOR;
     }
+
+    @Override
+    public String toString() {
+        return "Control(" + mapping + ")";
+    }
 }
