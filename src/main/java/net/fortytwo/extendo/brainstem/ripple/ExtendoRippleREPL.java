@@ -3,6 +3,8 @@ package net.fortytwo.extendo.brainstem.ripple;
 import android.util.Log;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
+import net.fortytwo.extendo.brainstem.ripple.lib.DictionaryGetMapping;
+import net.fortytwo.extendo.brainstem.ripple.lib.DictionaryPutMapping;
 import net.fortytwo.extendo.brainstem.ripple.lib.MorseMapping;
 import net.fortytwo.extendo.brainstem.ripple.lib.SpeakMapping;
 import net.fortytwo.extendo.brainstem.ripple.lib.TypeatronDictionaryMapping;
@@ -24,11 +26,14 @@ public class ExtendoRippleREPL {
     private StringBuilder currentLineOfText;
 
     private final Map<String, RippleValue> shortcutDictionary = new HashMap<String, RippleValue>();
+    private UserDictionary userDictionary = new UserDictionary();
 
     public ExtendoRippleREPL(final RippleSession session,
                              final TypeatronControl typeatron) throws RippleException {
         this.session = session;
 
+        shortcutDictionary.put("DEL", new ControlValue(new DictionaryGetMapping(userDictionary)));
+        shortcutDictionary.put("ESC", new ControlValue(new DictionaryPutMapping(userDictionary)));
         // special value: all primitives are available here, through first-class names rather than shortcuts
         shortcutDictionary.put(" ", new ControlValue(new TypeatronDictionaryMapping(typeatron)));
 

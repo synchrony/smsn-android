@@ -123,8 +123,6 @@ public class Main extends Activity implements TextToSpeech.OnInitListener {
         super.onStop();
 
         Log.i(Brainstem.TAG, "Brainstem stop()");
-
-        brainstem.disconnect(this);
     }
 
     /**

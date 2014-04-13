@@ -16,6 +16,9 @@ import org.openrdf.sail.Sail;
 import org.openrdf.sail.SailException;
 import org.openrdf.sail.memory.MemoryStore;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */

@@ -74,7 +74,6 @@ public class Brainstem {
 
     private BrainstemAgent agent;
     private final ExtendoBrain brain;
-    private final RippleSession rippleSession;
 
     private Main.Toaster toaster;
     private Main.Speaker speaker;
@@ -102,12 +101,6 @@ public class Brainstem {
         try {
             brain = new ExtendoBrain(bg);
         } catch (ExtendoBrain.ExtendoBrainException e) {
-            throw new BrainstemException(e);
-        }
-
-        try {
-            rippleSession = new RippleSession();
-        } catch (RippleException e) {
             throw new BrainstemException(e);
         }
 
@@ -140,10 +133,6 @@ public class Brainstem {
         return bluetoothManager;
     }
 
-    public RippleSession getRippleSession() {
-        return rippleSession;
-    }
-
     public Main.Texter getTexter() {
         return texter;
     }
@@ -154,17 +143,6 @@ public class Brainstem {
 
     public Main.Speaker getSpeaker() {
         return speaker;
-    }
-
-    public void disconnect(final Context context) {
-        /*
-        for (BluetoothDeviceControl d : devices) {
-            d.disconnect(context);
-        }
-
-        // don't forget to unregister a registered receiver
-        context.unregisterReceiver(arduinoReceiver);
-        */
     }
 
     // note: in Android, SharedPreferences are preferred to properties files.  This file specifically contains those

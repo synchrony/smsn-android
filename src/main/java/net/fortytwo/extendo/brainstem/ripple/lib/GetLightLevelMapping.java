@@ -19,7 +19,7 @@ public class GetLightLevelMapping extends PrimitiveStackMapping {
 
     public String[] getIdentifiers() {
         return new String[]{
-                BrainstemLibrary.NS_2014_04 + "getLightLevel"
+                BrainstemLibrary.NS_2014_04 + "get-light-level"
         };
     }
 

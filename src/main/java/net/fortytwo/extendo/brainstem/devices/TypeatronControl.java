@@ -331,10 +331,12 @@ public class TypeatronControl extends BluetoothDeviceControl {
         currentMode = Mode.Text;
         currentButtonState = rootStates.get(currentMode);
 
-        // TODO: is mode switching so important?  Perhaps we can use these chords for something else
-        // mode entry from default mode
-        addChord(Mode.Text, "1221", null, Modifier.Control, null);
-        addChord(Mode.Text, "1212", Mode.Hardware, null, null);
+        // control-ESC codes for dictionary put
+        addChord(Mode.Text, "1221", null, Modifier.Control, "ESC");
+        // control-DEL codes for dictionary get
+        addChord(Mode.Text, "1212", null, Modifier.Control, "DEL");
+        //addChord(Mode.Text, "1221", null, Modifier.Control, null);
+        //addChord(Mode.Text, "1212", Mode.Hardware, null, null);
         // 1331 unassigned
         addChord(Mode.Text, "1313", Mode.Numeric, null, null);
         // 1441 unassigned
