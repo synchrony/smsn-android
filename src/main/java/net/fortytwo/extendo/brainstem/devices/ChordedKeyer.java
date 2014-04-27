@@ -1,12 +1,9 @@
 package net.fortytwo.extendo.brainstem.devices;
 
-import net.fortytwo.ripple.RippleException;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,12 +57,10 @@ public class ChordedKeyer {
     }
 
     public void nextInputState(final byte[] state) {
-        System.out.println("lastInput: " + new String(lastInput));
         for (int i = 0; i < 5; i++) {
             // Generally, at most one button should change per time step
             // However, if two buttons change state, it is an arbitrary choice w.r.t. which one changed first
             if (state[i] != lastInput[i]) {
-                System.out.println("state[" + i + "] differs");
                 if ('1' == state[i]) {
                     buttonPressed(i);
                 } else {
@@ -197,150 +192,6 @@ public class ChordedKeyer {
         } finally {
             in.close();
         }
-
-        /*
-        addChord(Mode.Text, "2112", null, null, "a");
-        addChord(Mode.Text, "213312", null, Modifier.Control, "a");
-        addChord(Mode.Text, "214412", null, null, "A");
-        addChord(Mode.Text, "215512", null, null, "'");
-
-        // 2121 unassigned
-
-        addChord(Mode.Text, "2332", null, null, "e");
-        addChord(Mode.Text, "231132", null, Modifier.Control, "e");
-        addChord(Mode.Text, "234432", null, null, "E");
-        addChord(Mode.Text, "235532", null, null, "=");
-
-        addChord(Mode.Text, "2323", null, null, "w");
-        addChord(Mode.Text, "231123", null, Modifier.Control, "w");
-        addChord(Mode.Text, "234423", null, null, "W");
-        addChord(Mode.Text, "235523", null, null, "@");
-
-        addChord(Mode.Text, "2442", null, null, "i");
-        addChord(Mode.Text, "241142", null, Modifier.Control, "i");
-        addChord(Mode.Text, "243342", null, null, "I");
-        addChord(Mode.Text, "245542", null, null, ":");
-
-        addChord(Mode.Text, "2424", null, null, "y");
-        addChord(Mode.Text, "241124", null, Modifier.Control, "y");
-        addChord(Mode.Text, "243324", null, null, "Y");
-        addChord(Mode.Text, "245524", null, null, "&");
-
-        addChord(Mode.Text, "2552", null, null, "o");
-        addChord(Mode.Text, "251152", null, Modifier.Control, "o");
-        addChord(Mode.Text, "253352", null, null, "O");
-        // there is no punctuation associated with "o"
-
-        addChord(Mode.Text, "2525", null, null, "u");
-        addChord(Mode.Text, "251125", null, Modifier.Control, "u");
-        addChord(Mode.Text, "253325", null, null, "U");
-        addChord(Mode.Text, "254425", null, null, "_");
-
-        addChord(Mode.Text, "3113", null, null, "p");
-        addChord(Mode.Text, "312213", null, Modifier.Control, "p");
-        addChord(Mode.Text, "314413", null, null, "P");
-        addChord(Mode.Text, "315513", null, null, "+");
-
-        addChord(Mode.Text, "3131", null, null, "b");
-        addChord(Mode.Text, "312231", null, Modifier.Control, "b");
-        addChord(Mode.Text, "314431", null, null, "B");
-        addChord(Mode.Text, "315531", null, null, "\\");
-
-        addChord(Mode.Text, "3223", null, null, "t");
-        addChord(Mode.Text, "321123", null, Modifier.Control, "t");
-        addChord(Mode.Text, "324423", null, null, "T");
-        addChord(Mode.Text, "325523", null, null, "~");
-
-        addChord(Mode.Text, "3232", null, null, "d");
-        addChord(Mode.Text, "321132", null, Modifier.Control, "d");
-        addChord(Mode.Text, "324432", null, null, "D");
-        addChord(Mode.Text, "325532", null, null, "$");
-
-        addChord(Mode.Text, "3443", null, null, "k");
-        addChord(Mode.Text, "341143", null, Modifier.Control, "k");
-        addChord(Mode.Text, "342243", null, null, "K");
-        addChord(Mode.Text, "345543", null, null, "*");
-
-        addChord(Mode.Text, "3434", null, null, "g");
-        addChord(Mode.Text, "341134", null, Modifier.Control, "g");
-        addChord(Mode.Text, "342234", null, null, "G");
-        addChord(Mode.Text, "345534", null, null, "`");
-
-        addChord(Mode.Text, "3553", null, null, "q");
-        addChord(Mode.Text, "351153", null, Modifier.Control, "q");
-        addChord(Mode.Text, "352253", null, null, "Q");
-        addChord(Mode.Text, "354453", null, null, "?");
-
-        // 3535 unassigned
-
-        addChord(Mode.Text, "4114", null, null, "f");
-        addChord(Mode.Text, "412214", null, Modifier.Control, "f");
-        addChord(Mode.Text, "413314", null, null, "F");
-        addChord(Mode.Text, "415514", null, null, ".");
-
-        addChord(Mode.Text, "4141", null, null, "v");
-        addChord(Mode.Text, "412241", null, Modifier.Control, "v");
-        addChord(Mode.Text, "413341", null, null, "V");
-        addChord(Mode.Text, "415541", null, null, "|");
-
-        addChord(Mode.Text, "4224", null, null, "c");
-        addChord(Mode.Text, "421124", null, Modifier.Control, "c");
-        addChord(Mode.Text, "423324", null, null, "C");
-        addChord(Mode.Text, "425524", null, null, ",");
-
-        addChord(Mode.Text, "4242", null, null, "j");
-        addChord(Mode.Text, "421142", null, Modifier.Control, "j");
-        addChord(Mode.Text, "423342", null, null, "J");
-        addChord(Mode.Text, "425542", null, null, ";");
-
-        addChord(Mode.Text, "4334", null, null, "s");
-        addChord(Mode.Text, "431134", null, Modifier.Control, "s");
-        addChord(Mode.Text, "432234", null, null, "S");
-        addChord(Mode.Text, "435534", null, null, "/");
-
-        addChord(Mode.Text, "4343", null, null, "z");
-        addChord(Mode.Text, "431143", null, Modifier.Control, "z");
-        addChord(Mode.Text, "432243", null, null, "Z");
-        addChord(Mode.Text, "435543", null, null, "%");
-
-        addChord(Mode.Text, "4554", null, null, "h");
-        addChord(Mode.Text, "451154", null, Modifier.Control, "h");
-        addChord(Mode.Text, "452254", null, null, "H");
-        addChord(Mode.Text, "453354", null, null, "^");
-
-        addChord(Mode.Text, "4545", null, null, "x");
-        addChord(Mode.Text, "451145", null, Modifier.Control, "x");
-        addChord(Mode.Text, "452245", null, null, "X");
-        addChord(Mode.Text, "453345", null, null, "!");
-
-        addChord(Mode.Text, "5115", null, null, "m");
-        addChord(Mode.Text, "512215", null, Modifier.Control, "m");
-        addChord(Mode.Text, "513315", null, null, "M");
-        addChord(Mode.Text, "514415", null, null, "-");
-
-        // 5151 unassigned
-
-        addChord(Mode.Text, "5225", null, null, "n");
-        addChord(Mode.Text, "521125", null, Modifier.Control, "n");
-        addChord(Mode.Text, "523325", null, null, "N");
-        addChord(Mode.Text, "524425", null, null, "#");
-
-        // 5252 unassigned
-
-        addChord(Mode.Text, "5335", null, null, "l");
-        addChord(Mode.Text, "531135", null, Modifier.Control, "l");
-        addChord(Mode.Text, "532235", null, null, "L");
-        addChord(Mode.Text, "534435", null, null, "\"");
-
-        // 5353 unassigned
-
-        addChord(Mode.Text, "5445", null, null, "r");
-        addChord(Mode.Text, "541145", null, Modifier.Control, "r");
-        addChord(Mode.Text, "542245", null, null, "R");
-        // no punctuation associated with "r" (this slot is reserved for right-handed quotes)
-
-        // 5454 unassigned
-        */
     }
 
     private char findUnusedKey(final String chord,
@@ -380,21 +231,18 @@ public class ChordedKeyer {
 
     // buttonIndex: 0 (thumb) through 4 (pinky)
     private void buttonEvent(int buttonIndex) {
-        System.out.println("buttonEvent(" + buttonIndex + ")"); System.out.flush();
         if (null != currentButtonState) {
             currentButtonState = currentButtonState.nextNodes[buttonIndex];
         }
     }
 
     private void buttonPressed(int buttonIndex) {
-        System.out.println("buttonPressed(" + buttonIndex + ")"); System.out.flush();
         totalButtonsCurrentlyPressed++;
 
         buttonEvent(buttonIndex);
     }
 
     private void buttonReleased(int buttonIndex) {
-        System.out.println("buttonReleased(" + buttonIndex + ")"); System.out.flush();
         totalButtonsCurrentlyPressed--;
 
         buttonEvent(buttonIndex);
@@ -409,7 +257,7 @@ public class ChordedKeyer {
                         modifier = Modifier.None;
                     }
 
-                    eventHandler.handle(currentButtonState.mode, symbol, modifier);
+                    eventHandler.handle(currentMode, symbol, modifier);
                 } else {
                     Mode mode = currentButtonState.mode;
                     // this sets the mode for *subsequent* key events

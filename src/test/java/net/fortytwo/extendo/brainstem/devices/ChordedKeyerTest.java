@@ -21,7 +21,7 @@ public class ChordedKeyerTest {
     public void setUp() throws Exception {
         keyer = new ChordedKeyer(new ChordedKeyer.EventHandler() {
             public void handle(ChordedKeyer.Mode mode, String symbol, ChordedKeyer.Modifier modifier) {
-                System.out.println("event:\t" + mode + "\t" + symbol + "\t" + modifier);
+                //System.out.println("event:\t" + mode + "\t" + symbol + "\t" + modifier);
                 lastMode = mode;
                 lastSymbol = symbol;
                 lastModifier = modifier;
@@ -33,28 +33,32 @@ public class ChordedKeyerTest {
     public void testLettersAndPunctuation() throws Exception {
         reset();
         pressKeys(3, 2, 3, 2);
-        //assertEquals(ChordedKeyer.Mode.Text, lastMode);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals("e", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
 
         reset();
         pressKeys(3, 2, 4, 4, 3, 2);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals("E", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
 
         reset();
         pressKeys(3, 2, 1, 1, 3, 2);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals("e", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.Control, lastModifier);
 
         reset();
         pressKeys(3, 2, 5, 5, 3, 2);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals("=", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
 
         // make sure the comma has been read correctly from the CSV
         reset();
         pressKeys(3, 1, 5, 5, 1, 3);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals(",", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
     }
@@ -65,21 +69,25 @@ public class ChordedKeyerTest {
 
         reset();
         pressKeys(2, 2);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals(" ", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
 
         reset();
         pressKeys(3, 3);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals("\n", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
 
         reset();
         pressKeys(4, 4);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals("DEL", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
 
         reset();
         pressKeys(5, 5);
+        assertEquals(ChordedKeyer.Mode.Text, lastMode);
         assertEquals("ESC", lastSymbol);
         assertEquals(ChordedKeyer.Modifier.None, lastModifier);
     }
@@ -101,7 +109,7 @@ public class ChordedKeyerTest {
             keyState[index] = !keyState[index];
             inputState[index] = (byte) (keyState[index] ? '1' : '0');
 
-            System.out.println("input: " + new String(inputState));
+            //System.out.println("input: " + new String(inputState));
             keyer.nextInputState(inputState);
         }
     }
