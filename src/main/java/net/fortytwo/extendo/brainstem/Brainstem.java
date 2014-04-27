@@ -33,6 +33,10 @@ import org.openrdf.query.BindingSet;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,14 +53,17 @@ public class Brainstem {
     public static final String
             BLUETOOTH_NAME = "Extendo";
 
-    private static final String PROPS_PATH = "/sdcard/brainstem.props";
-
     public static final String
             PROP_AGENTURI = "net.fortytwo.extendo.agentUri",
             PROP_REXSTER_URL = "net.fortytwo.extendo.rexsterUrl",
             PROP_REXSTER_GRAPH = "net.fortytwo.extendo.rexsterGraph",
             PROP_EXTENDOHAND_ADDRESS = "net.fortytwo.extendo.hand.address",
             PROP_TYPEATRON_ADDRESS = "net.fortytwo.extendo.typeatron.address";
+
+    // TODO: make this configurable
+    public static final boolean RELAY_OSC = true;
+
+    private static final String PROPS_PATH = "/sdcard/brainstem.props";
 
     private final List<BluetoothDeviceControl> devices;
 
@@ -127,6 +134,10 @@ public class Brainstem {
         this.speaker = speaker;
         this.texter = texter;
         this.emacsAvailable = emacsAvailable;
+    }
+
+    public BrainstemAgent getAgent() {
+        return agent;
     }
 
     public BluetoothManager getBluetoothManager() {
@@ -203,7 +214,7 @@ public class Brainstem {
         } else {
             try {
                 agent = new BrainstemAgent(u);
-                Log.i(TAG, "just created BrainstemAgent with URI " + u);
+                Log.i(TAG, "created BrainstemAgent with URI " + u);
 
                 final BindingSetHandler queryAnswerHandler = new BindingSetHandler() {
                     public void handle(final BindingSet bindings) {
@@ -218,6 +229,14 @@ public class Brainstem {
                 };
 
                 agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_ALL_GB_GESTURES, queryAnswerHandler);
+
+                if (RELAY_OSC) {
+                    oscDispatcher.addListener(new OSCDispatcher.OSCMessageListener() {
+                        public void handle(final OSCMessage m) {
+                            agent.sendOSCMessageToFacilitator(m);
+                        }
+                    });
+                }
             } catch (QueryEngine.InvalidQueryException e) {
                 throw new BrainstemException(e);
             } catch (IOException e) {
@@ -251,43 +270,6 @@ public class Brainstem {
     private void addBluetoothDevice(final BluetoothDeviceControl dc) {
         devices.add(dc);
         bluetoothManager.register(dc);
-    }
-
-    private void handleOSCData(final String data) {
-        OSCByteArrayToJavaConverter c = new OSCByteArrayToJavaConverter();
-
-        // TODO: is the array length all that is expected for the second argument?
-        OSCPacket p = c.convert(data.getBytes(), data.getBytes().length);
-
-        if (p instanceof OSCMessage) {
-            if (!oscDispatcher.dispatch((OSCMessage) p)) {
-                Log.w(TAG, "no OSC handler at address " + ((OSCMessage) p).getAddress());
-
-                // TODO: temporary debugging code
-                String address = ((OSCMessage) p).getAddress();
-                StringBuilder sb = new StringBuilder("address bytes:");
-                for (byte b : address.getBytes()) {
-                    sb.append(" ").append((int) b);
-                }
-                Log.w(TAG, sb.toString());
-            }
-        } else {
-            Log.w(TAG, "OSC packet is of non-message type " + p.getClass().getSimpleName() + ": " + p);
-        }
-
-        /*
-        int i = message.indexOf(" ");
-        if (i > 0) {
-            String prefix = message.substring(i);
-
-            BluetoothOSCDeviceControl dc = deviceByOSCPrefix.get(prefix);
-            if (null == dc) {
-                Log.w(TAG, "no control matching OSC address " + prefix);
-            } else {
-                dc.handleOSCStyleMessage(message);
-            }
-        }
-        */
     }
 
     public class BrainstemException extends Exception {
@@ -356,15 +338,6 @@ public class Brainstem {
         }
     }
 
-    // TODO: temporary
-    public void sendTestMessageToTypeatron(final Context context) {
-        OSCMessage m = new OSCMessage();
-        m.setAddress("/exo/tt/rgb");
-        m.addArgument(0xff0000);
-
-        typeatron.send(m);
-    }
-
     public void simulateGestureEvent() {
         agent.timeOfLastEvent = System.currentTimeMillis();
 
@@ -382,13 +355,17 @@ public class Brainstem {
 
     public void pingFacilitatorConnection() {
         try {
-            agent.getPinger().ping(new Pinger.PingResultHandler() {
-                public void handleResult(long delay) {
-                    toaster.makeText("ping delay: " + delay + "ms");
-                }
-            });
+            if (agent.getFacilitatorConnection().isActive()) {
+                agent.getPinger().ping(new Pinger.PingResultHandler() {
+                    public void handleResult(long delay) {
+                        toaster.makeText("ping delay: " + delay + "ms");
+                    }
+                });
+            } else {
+                Log.i(TAG, "can't ping facilitator; no connection");
+            }
         } catch (Throwable t) {
-            Log.e(TAG, "error pinging connection: " + t.getMessage());
+            Log.e(TAG, "error pinging facilitator: " + t.getMessage());
             t.printStackTrace(System.err);
         }
     }

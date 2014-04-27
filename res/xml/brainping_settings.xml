@@ -4,6 +4,12 @@
         android:title="BrainPing settings">
 
     <CheckBoxPreference
+            android:key="osc_relay"
+            android:title="Relay OSC messages"
+            android:summary="From Bluetooth devices to facilitator"
+            android:defaultValue="false"/>
+
+    <CheckBoxPreference
             android:key="brainping_enabled"
             android:title="Enable brain pings"
             android:summary="Randomly throughout the day"

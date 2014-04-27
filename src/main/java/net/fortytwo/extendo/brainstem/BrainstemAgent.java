@@ -1,5 +1,7 @@
 package net.fortytwo.extendo.brainstem;
 
+import android.util.Log;
+import com.illposed.osc.OSCMessage;
 import edu.rpi.twc.sesamestream.QueryEngine;
 import net.fortytwo.extendo.p2p.ExtendoAgent;
 import net.fortytwo.extendo.rdf.vocab.ExtendoGesture;
@@ -12,6 +14,9 @@ import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.model.vocabulary.XMLSchema;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -37,6 +42,10 @@ public class BrainstemAgent extends ExtendoAgent {
                     "?instant tl:at ?time .\n" +
                     "}";
 
+    private DatagramSocket oscSocket;
+    private InetAddress oscAddress;
+    private int oscPort;
+
     public BrainstemAgent(final String agentUri) throws QueryEngine.InvalidQueryException, IOException, QueryEngine.IncompatibleQueryException {
         super(agentUri, true);
     }
@@ -61,5 +70,30 @@ public class BrainstemAgent extends ExtendoAgent {
         c.add(vf.createStatement(gesture, ExtendoGesture.recognizedAt, instant));
 
         return new Dataset(c);
+    }
+
+    public void sendOSCMessageToFacilitator(final OSCMessage m) {
+        if (getFacilitatorConnection().isActive()) {
+            try {
+                if (null == oscSocket) {
+                    oscPort = getFacilitatorService().description.getOscPort();
+                    oscAddress = getFacilitatorService().address;
+
+                    oscSocket = new DatagramSocket();
+                }
+
+                byte[] buffer = m.getByteArray();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oscAddress, oscPort);
+                oscSocket.send(packet);
+
+                Log.i(Brainstem.TAG, "sent OSC datagram to " + oscAddress + ":" + oscPort);
+            } catch (IOException e) {
+                Log.e(Brainstem.TAG, "error in sending OSC datagram to facilitator: " + e.getMessage());
+                e.printStackTrace(System.err);
+            } catch (Throwable t) {
+                Log.e(Brainstem.TAG, "unexpected error in sending OSC datagram to facilitator: " + t.getMessage());
+                t.printStackTrace(System.err);
+            }
+        }
     }
 }

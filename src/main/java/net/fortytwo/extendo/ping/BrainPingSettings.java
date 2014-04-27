@@ -62,8 +62,8 @@ public class BrainPingSettings extends PreferenceActivity {
 
     @Override
     public void onStop() {
-        System.out.println("stopping...");
+        //System.out.println("stopping...");
         super.onStop();
-        BrainPingScheduler.getInstance().preferencesUpdated();
+        //BrainPingScheduler.getInstance().preferencesUpdated();
     }
 }

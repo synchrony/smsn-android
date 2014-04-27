@@ -1,5 +1,8 @@
 package net.fortytwo.extendo.brainstem.ripple;
 
+import com.illposed.osc.OSCMessage;
+import net.fortytwo.extendo.brainstem.Brainstem;
+import net.fortytwo.extendo.brainstem.BrainstemAgent;
 import net.fortytwo.flow.Collector;
 import net.fortytwo.ripple.RippleException;
 import net.fortytwo.ripple.model.Model;
@@ -32,7 +35,10 @@ public class RippleSession {
     private Collector<RippleList> prevCollector;
     private Collector<RippleList> curCollector;
 
-    public RippleSession() throws RippleException {
+    private final BrainstemAgent agent;
+
+    public RippleSession(final BrainstemAgent agent) throws RippleException {
+        this.agent = agent;
         sail = new MemoryStore();
         try {
             sail.initialize();
@@ -81,6 +87,14 @@ public class RippleSession {
         System.out.println("\tafter evaluation:");
         for (RippleList l : curCollector) {
             System.out.println("\t\t" + l);
+
+            if (Brainstem.RELAY_OSC) {
+                if (agent.getFacilitatorConnection().isActive()) {
+                    OSCMessage m = new OSCMessage("/exo/fctr/tt/stack");
+                    m.addArgument(l.toString());
+                    agent.sendOSCMessageToFacilitator(m);
+                }
+            }
         }
         prevCollector = curCollector;
     }

@@ -11,7 +11,9 @@ import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
@@ -20,8 +22,11 @@ public class OSCDispatcher {
 
     private final Map<String, OSCMessageHandler> handlers;
 
+    private final Set<OSCMessageListener> listeners;
+
     public OSCDispatcher() {
         handlers = new HashMap<String, OSCMessageHandler>();
+        listeners = new HashSet<OSCMessageListener>();
     }
 
     public void register(final String address,
@@ -29,6 +34,14 @@ public class OSCDispatcher {
         // note: no checking for duplicate addresses
 
         handlers.put(address, handler);
+    }
+
+    public void addListener(final OSCMessageListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(final OSCMessageListener listener) {
+        listeners.remove(listener);
     }
 
     /**
@@ -40,12 +53,20 @@ public class OSCDispatcher {
     public boolean dispatch(final OSCMessage message) {
         OSCMessageHandler handler = handlers.get(message.getAddress());
 
+        boolean handled;
         if (null == handler) {
-            return false;
+            handled = false;
         } else {
             handler.handle(message);
-            return true;
+            handled = true;
         }
+
+        // give the message to the listeners after any time-critical handlers have been served
+        for (OSCMessageListener listener : listeners) {
+            listener.handle(message);
+        }
+
+        return handled;
     }
 
     public void receive(final byte[] data) {
@@ -112,5 +133,9 @@ public class OSCDispatcher {
         }
 
         return sb.toString();
+    }
+
+    public interface OSCMessageListener {
+        void handle(OSCMessage m);
     }
 }
