@@ -196,6 +196,10 @@ public class TypeatronControl extends BluetoothDeviceControl {
         return brainstem;
     }
 
+    public ChordedKeyer getKeyer() {
+        return keyer;
+    }
+
     @Override
     protected void onConnect() {
         doPing();

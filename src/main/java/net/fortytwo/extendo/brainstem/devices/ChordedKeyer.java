@@ -15,7 +15,7 @@ public class ChordedKeyer {
     private byte[] lastInput;
 
     public enum Mode {
-        Text, Numeric, Hardware, Mash;
+        Text, Numeric, Hardware, /*Laser,*/ Mash;
 
         public boolean isTextEntryMode() {
             return this != Hardware && this != Mash;
@@ -51,6 +51,8 @@ public class ChordedKeyer {
 
     private final EventHandler eventHandler;
 
+    private Map<String, String> punctuationMap;
+
     public ChordedKeyer(final EventHandler eventHandler) throws IOException {
         this.eventHandler = eventHandler;
         initializeChords();
@@ -70,6 +72,10 @@ public class ChordedKeyer {
         }
 
         System.arraycopy(state, 0, lastInput, 0, 5);
+    }
+
+    public Map<String, String> getPunctuationMap() {
+        return punctuationMap;
     }
 
     private void addChord(final Mode inputMode,
@@ -132,6 +138,12 @@ public class ChordedKeyer {
         currentMode = Mode.Text;
         currentButtonState = rootStates.get(currentMode);
 
+        addChord(Mode.Text, "1212", null, Modifier.Control, "u"); // uppercase text
+        addChord(Mode.Text, "1313", null, Modifier.Control, "p"); // punctuation
+        addChord(Mode.Text, "1414", null, Modifier.Control, "n"); // numbers
+
+        // TODO: restore mash mode
+        /*
         // control-ESC codes for dictionary put
         addChord(Mode.Text, "1221", null, Modifier.Control, "ESC");
         // control-DEL codes for dictionary get
@@ -144,6 +156,13 @@ public class ChordedKeyer {
         addChord(Mode.Text, "1414", Mode.Text, null, null);  // a no-op
         addChord(Mode.Text, "1551", Mode.Mash, Modifier.None, null);
         // 1515 unassigned
+        */
+
+        /*
+        // any keypress both activates the laser, then upon release terminates laser mode
+        for (int i = 1; i <= 5; i++) {
+            addChord(Mode.Laser, "" + i + i, Mode.Text, Modifier.None, null);
+        }*/
 
         // return to default mode from anywhere other than mash mode
         for (Mode m : Mode.values()) {
@@ -158,7 +177,7 @@ public class ChordedKeyer {
         // space, newline, delete, escape available in both of the text-entry modes
         for (Mode m : new Mode[]{Mode.Text, Mode.Numeric}) {
             // control-space codes for the Typeatron dictionary operator
-            addChord(m, "11", null, Modifier.Control, " ");
+            addChord(m, "11", null, Modifier.Control, "");
 
             addChord(m, "22", null, null, " ");
             //addChord("22", null, null, "SPACE", m);
@@ -168,6 +187,7 @@ public class ChordedKeyer {
             addChord(m, "55", null, null, "ESC");
         }
 
+        punctuationMap = new HashMap<String, String>();
         InputStream in = TypeatronControl.class.getResourceAsStream("typeatron-letters-and-punctuation.csv");
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
@@ -185,6 +205,7 @@ public class ChordedKeyer {
 
                     if (a.length > 2) {
                         String punc = a[2].replaceAll("COMMA", ",");
+                        punctuationMap.put(letter, punc);
                         addChord(Mode.Text, findPunctuationChord(chord), null, null, punc);
                     }
                 }

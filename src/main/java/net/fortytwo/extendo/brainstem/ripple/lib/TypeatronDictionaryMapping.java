@@ -2,6 +2,7 @@ package net.fortytwo.extendo.brainstem.ripple.lib;
 
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
 import net.fortytwo.extendo.brainstem.ripple.ControlValue;
+import net.fortytwo.extendo.brainstem.ripple.UserDictionary;
 import net.fortytwo.flow.Sink;
 import net.fortytwo.ripple.RippleException;
 import net.fortytwo.ripple.libs.control.Apply;
@@ -135,13 +136,23 @@ import java.util.Map;
 public class TypeatronDictionaryMapping extends PrimitiveStackMapping {
     private final Map<String, ControlValue> dictionary = new HashMap<String, ControlValue>();
 
-    public TypeatronDictionaryMapping(final TypeatronControl typeatron) throws RippleException {
+    public TypeatronDictionaryMapping(final TypeatronControl typeatron,
+                                      final UserDictionary userDictionary) throws RippleException {
 
         // Typeatron hardware library
+        // TODO: l = laser
         add(new GetLightLevelMapping(typeatron), "ll", "light");
         add(new MorseMapping(typeatron), "m", "morse");
         add(new SpeakMapping(typeatron), "s", "speak");
         add(new VibrateMapping(typeatron), "v", "vibrate");
+
+        // Typeatron internals
+        add(new DictionaryPutMapping(userDictionary), "i");
+        add(new DictionaryGetMapping(userDictionary), "o");
+
+        // TODO: x = experiment / mash mode
+        // TODO: y = redo
+        // TODO: z = undo
 
         // control library
         add(new Apply(), ".");
@@ -254,7 +265,7 @@ public class TypeatronDictionaryMapping extends PrimitiveStackMapping {
         add(new Scrap(), "es");
 
         // string library
-        add(new Concat(), "icc");
+        add(new Concat(), "icc", "c");
         add(new Contains(), "ict");
         add(new EndsWith(), "iew");
         add(new IndexOf(), "iio");
