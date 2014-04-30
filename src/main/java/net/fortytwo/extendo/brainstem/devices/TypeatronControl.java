@@ -4,13 +4,16 @@ import android.util.Log;
 import com.illposed.osc.OSCMessage;
 import net.fortytwo.extendo.brain.BrainModeClient;
 import net.fortytwo.extendo.brainstem.Brainstem;
+import net.fortytwo.extendo.brainstem.BrainstemAgent;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
 import net.fortytwo.extendo.brainstem.ripple.ExtendoRippleREPL;
 import net.fortytwo.extendo.brainstem.ripple.RippleSession;
+import net.fortytwo.rdfagents.model.Dataset;
 import net.fortytwo.ripple.RippleException;
 import net.fortytwo.ripple.model.ModelConnection;
+import org.openrdf.model.URI;
 
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -24,6 +27,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
     // outbound addresses
     private static final String
+            EXO_TT_LASER_TRIGGER = "/exo/tt/laser/trigger",
             EXO_TT_MODE = "/exo/tt/mode",
             EXO_TT_MORSE = "/exo/tt/morse",
             EXO_TT_PHOTO_GET = "/exo/tt/photo/get",
@@ -34,6 +38,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
             EXO_TT_ERROR = "/exo/tt/error",
             EXO_TT_INFO = "/exo/tt/info",
             EXO_TT_KEYS = "/exo/tt/keys",
+            EXO_TT_LASER_EVENT = "/exo/tt/laser/event",
             EXO_TT_PHOTO_DATA = "/exo/tt/photo/data",
             EXO_TT_PING_REPLY = "/exo/tt/ping/reply";
 
@@ -47,6 +52,8 @@ public class TypeatronControl extends BluetoothDeviceControl {
     private final RippleSession rippleSession;
     private final ExtendoRippleREPL rippleREPL;
     private final ChordedKeyer keyer;
+
+    private URI thingPointedTo;
 
     public TypeatronControl(final String address,
                             final OSCDispatcher oscDispatcher,
@@ -182,6 +189,14 @@ public class TypeatronControl extends BluetoothDeviceControl {
             }
         });
 
+        oscDispatcher.register(EXO_TT_LASER_EVENT, new OSCMessageHandler() {
+            public void handle(OSCMessage message) {
+                // TODO: use the recognition time parameter provided in the message
+                long recognitionTime = System.currentTimeMillis();
+
+                handlePointEvent(recognitionTime);
+            }
+        });
         // TODO: temporary... assume Emacs is available, even if we can't detect it...
         boolean forceEmacsAvailable = true;  // emacsAvailable
 
@@ -261,6 +276,11 @@ public class TypeatronControl extends BluetoothDeviceControl {
         send(m);
     }
 
+    public void sendLaserTriggerCommand() {
+        OSCMessage m = new OSCMessage(EXO_TT_LASER_TRIGGER);
+        send(m);
+    }
+
     public void sendMorseCommand(final String text) {
         OSCMessage m = new OSCMessage(EXO_TT_MORSE);
         m.addArgument(text);
@@ -276,8 +296,33 @@ public class TypeatronControl extends BluetoothDeviceControl {
         brainstem.getSpeaker().speak(text);
     }
 
+    public void pointTo(final URI thingPointedTo) {
+        // the next point event from the hardware will reference this thing
+        this.thingPointedTo = thingPointedTo;
+
+        sendLaserTriggerCommand();
+    }
+
+    private void handlePointEvent(final long recognitionTime) {
+        BrainstemAgent agent = brainstem.getAgent();
+
+        agent.timeOfLastEvent = recognitionTime;
+
+        Date recognizedAt = new Date(recognitionTime);
+
+        Dataset d = agent.datasetForPointingGesture(recognizedAt.getTime(), thingPointedTo);
+        try {
+            agent.sendDataset(d);
+        } catch (Exception e) {
+            Log.e(Brainstem.TAG, "failed to gestural dataset: " + e.getMessage());
+            e.printStackTrace(System.err);
+        }
+
+        Log.i(Brainstem.TAG, "pointed to " + thingPointedTo);
+    }
+
     /**
-     * @param time the duration of the signal in millseconds (valid values range from 1 to 60000)
+     * @param time the duration of the signal in milliseconds (valid values range from 1 to 60000)
      */
     public void sendVibrateCommand(final int time) {
         if (time < 0 || time > 60000) {

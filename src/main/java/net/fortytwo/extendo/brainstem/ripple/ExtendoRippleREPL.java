@@ -8,6 +8,8 @@ import net.fortytwo.extendo.brainstem.devices.ChordedKeyer;
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
 import net.fortytwo.extendo.brainstem.ripple.lib.TypeatronDictionaryMapping;
 import net.fortytwo.ripple.RippleException;
+import net.fortytwo.ripple.model.RDFValue;
+import org.openrdf.model.impl.URIImpl;
 
 import java.util.Map;
 
@@ -27,7 +29,37 @@ public class ExtendoRippleREPL {
         this.session = session;
         this.typeatron = typeatron;
         userDictionary = new UserDictionary(typeatron);
-        typeatronDictionary = new ControlValue(new TypeatronDictionaryMapping(typeatron, userDictionary));
+        typeatronDictionary = new ControlValue(new TypeatronDictionaryMapping(typeatron, userDictionary, session.getModelConnection()));
+
+        // TODO: temporary, for a demo
+        String[][] shortcuts = {
+                {"an", "http://fortytwo.net/2014/04/twc#AliNendick"},
+                {"av", "http://fortytwo.net/2014/04/twc#AmarViswanathan"},
+                {"bm", "http://fortytwo.net/2014/04/twc#BassemMakni"},
+                {"bz", "http://fortytwo.net/2014/04/twc#BoliangZhang"},
+                {"dy", "http://fortytwo.net/2014/04/twc#DianYu"},
+                {"ea", "http://fortytwo.net/2014/04/twc#EricAmeres"},
+                {"ep", "http://fortytwo.net/2014/04/twc#EvanPatton"},
+                {"hw", "http://fortytwo.net/2014/04/twc#HanWang"},
+                {"hl", "http://fortytwo.net/2014/04/twc#HaoLi"},
+                {"hh", "http://fortytwo.net/2014/04/twc#HongzhaoHuang"},
+                {"jm", "http://fortytwo.net/2014/04/twc#JamesMichaelis"},
+                {"jc", "http://fortytwo.net/2014/04/twc#JimMcCusker"},
+                {"jz", "http://fortytwo.net/2014/04/twc#JinGuangZheng"},
+                {"je", "http://fortytwo.net/2014/04/twc#JohnErickson"},
+                {"js", "http://fortytwo.net/2014/04/twc#JoshuaShinavier"},
+                {"kc", "http://fortytwo.net/2014/04/twc#KatieChastain"},
+                {"kg", "http://fortytwo.net/2014/04/twc#KristineGloria"},
+                {"mf", "http://fortytwo.net/2014/04/twc#MattFerrito"},
+                {"nr", "http://fortytwo.net/2014/04/twc#NidhiRastogi"},
+                {"ql", "http://fortytwo.net/2014/04/twc#QiLi"},
+                {"se", "http://fortytwo.net/2014/04/twc#SimonEllis"},
+                {"tl", "http://fortytwo.net/2014/04/twc#TimLebo"},
+                {"tz", "http://fortytwo.net/2014/04/twc#TongtaoZhang"},
+                {"tl", "http://fortytwo.net/2014/04/twc#YueLiu"}};
+        for (String[] pair : shortcuts) {
+            userDictionary.put(pair[0], new RDFValue(new URIImpl(pair[1])));
+        }
 
         newLine();
     }

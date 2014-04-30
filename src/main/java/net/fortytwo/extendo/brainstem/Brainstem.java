@@ -1,15 +1,11 @@
 package net.fortytwo.extendo.brainstem;
 
-import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.util.Log;
-import android.widget.EditText;
 import com.illposed.osc.OSCMessage;
-import com.illposed.osc.OSCPacket;
-import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import edu.rpi.twc.sesamestream.BindingSetHandler;
@@ -21,22 +17,16 @@ import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
 import net.fortytwo.extendo.brainstem.devices.ExtendoHandControl;
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
-import net.fortytwo.extendo.brainstem.ripple.RippleSession;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.p2p.Pinger;
 import net.fortytwo.extendo.util.properties.PropertyException;
 import net.fortytwo.extendo.util.properties.TypedProperties;
 import net.fortytwo.rdfagents.model.Dataset;
-import net.fortytwo.ripple.RippleException;
 import org.openrdf.query.BindingSet;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -216,7 +206,7 @@ public class Brainstem {
                 agent = new BrainstemAgent(u);
                 Log.i(TAG, "created BrainstemAgent with URI " + u);
 
-                final BindingSetHandler queryAnswerHandler = new BindingSetHandler() {
+                final BindingSetHandler gbGestureAnswerHandler = new BindingSetHandler() {
                     public void handle(final BindingSet bindings) {
                         long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
 
@@ -227,8 +217,25 @@ public class Brainstem {
                         Log.i(Brainstem.TAG, "received SPARQL query result: " + bindings);
                     }
                 };
+                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_ALL_GB_GESTURES, gbGestureAnswerHandler);
 
-                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_ALL_GB_GESTURES, queryAnswerHandler);
+                final BindingSetHandler twcDemoHandler = new BindingSetHandler() {
+                    public void handle(final BindingSet bindings) {
+                        long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+
+                        toneGenerator.play();
+
+                        String speech = bindings.getValue("pointedToName").stringValue() + ", "
+                                + bindings.getValue("projectName").stringValue();
+                        speaker.speak(speech);
+
+                        toaster.makeText("latency (before tone) = " + delay + "ms");
+
+                        Log.i(Brainstem.TAG, "found thing pointed to: " + bindings.getValue("pointedTo") + " (name: "
+                        + bindings.getValue("pointedToName") + ")");
+                    }
+                };
+                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_THING_POINTED_TO, twcDemoHandler);
 
                 if (RELAY_OSC) {
                     oscDispatcher.addListener(new OSCDispatcher.OSCMessageListener() {
@@ -343,7 +350,7 @@ public class Brainstem {
 
         Date recognizedAt = new Date();
 
-        Dataset d = agent.datasetForGestureEvent(recognizedAt.getTime());
+        Dataset d = agent.datasetForGenericBatonGesture(recognizedAt.getTime());
         try {
             agent.getQueryEngine().addStatements(d.getStatements());
             //agent.broadcastDataset(d);

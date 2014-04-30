@@ -5,14 +5,23 @@ import com.illposed.osc.OSCMessage;
 import edu.rpi.twc.sesamestream.QueryEngine;
 import net.fortytwo.extendo.p2p.ExtendoAgent;
 import net.fortytwo.extendo.rdf.vocab.ExtendoGesture;
+import net.fortytwo.extendo.rdf.vocab.FOAF;
 import net.fortytwo.extendo.rdf.vocab.Timeline;
+import net.fortytwo.rdfagents.data.DatasetFactory;
 import net.fortytwo.rdfagents.model.Dataset;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.vocabulary.RDF;
+import org.openrdf.model.vocabulary.RDFS;
 import org.openrdf.model.vocabulary.XMLSchema;
+import org.openrdf.rio.RDFFormat;
+import org.openrdf.rio.RDFHandlerException;
+import org.openrdf.rio.RDFWriter;
+import org.openrdf.rio.Rio;
+import org.openrdf.rio.ntriples.NTriplesWriter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -41,6 +50,21 @@ public class BrainstemAgent extends ExtendoAgent {
                     "?gesture gesture:recognizedAt ?instant .\n" +
                     "?instant tl:at ?time .\n" +
                     "}";
+    public static final String QUERY_FOR_THING_POINTED_TO =
+            "PREFIX gesture: <" + ExtendoGesture.NAMESPACE + ">\n" +
+                    "PREFIX tl: <" + Timeline.NAMESPACE + ">\n" +
+                    "PREFIX foaf: <" + FOAF.NAMESPACE + ">\n" +
+                    "PREFIX rdfs: <" + RDFS.NAMESPACE + ">\n" +
+                    "SELECT ?person ?time ?pointedTo ?pointedToName ?projectName WHERE {\n" +
+                    "?gesture a gesture:Point .\n" +
+                    "?gesture gesture:thingPointedTo ?pointedTo .\n" +
+                    "?pointedTo foaf:name ?pointedToName .\n" +
+                    "?pointedTo foaf:currentProject ?project .\n" +
+                    "?project rdfs:label ?projectName .\n" +
+                    "?gesture gesture:expressedBy ?person .\n" +
+                    "?gesture gesture:recognizedAt ?instant .\n" +
+                    "?instant tl:at ?time .\n" +
+                    "}";
 
     private DatagramSocket oscSocket;
     private InetAddress oscAddress;
@@ -51,14 +75,39 @@ public class BrainstemAgent extends ExtendoAgent {
     }
 
     /**
+     * Creates a dataset for a pointing event
+     *
+     * @param timestamp      the moment at which the gesture was recognized, in milliseconds since the Unix epoch
+     * @param thingPointedTo the thing which was referenced or physically pointed to by the gesture
+     * @return a Dataset describing the gesture event
+     */
+    public Dataset datasetForPointingGesture(final long timestamp,
+                                             final URI thingPointedTo) {
+        return datasetForGesture(timestamp, thingPointedTo);
+    }
+
+    /**
+     * Creates a dataset for a generic baton event
+     *
      * @param timestamp the moment at which the gesture was recognized, in milliseconds since the Unix epoch
      * @return a Dataset describing the gesture event
      */
-    public Dataset datasetForGestureEvent(final long timestamp) {
+    public Dataset datasetForGenericBatonGesture(final long timestamp) {
+        return datasetForGesture(timestamp, null);
+    }
+
+    private Dataset datasetForGesture(final long timestamp,
+                                      final URI thingPointedTo) {
         Collection<Statement> c = new LinkedList<Statement>();
 
         URI gesture = factory.randomURI();
-        c.add(vf.createStatement(gesture, RDF.TYPE, ExtendoGesture.GenericBatonGesture));
+
+        if (null == thingPointedTo) {
+            c.add(vf.createStatement(gesture, RDF.TYPE, ExtendoGesture.GenericBatonGesture));
+        } else {
+            c.add(vf.createStatement(gesture, RDF.TYPE, ExtendoGesture.Point));
+            c.add(vf.createStatement(gesture, ExtendoGesture.thingPointedTo, thingPointedTo));
+        }
 
         c.add(vf.createStatement(gesture, ExtendoGesture.expressedBy, agentUri));
         //c.add(vf.createStatement(selfUri, RDF.TYPE, FOAF.AGENT));
@@ -70,6 +119,30 @@ public class BrainstemAgent extends ExtendoAgent {
         c.add(vf.createStatement(gesture, ExtendoGesture.recognizedAt, instant));
 
         return new Dataset(c);
+    }
+
+    public void sendDataset(final Dataset d) throws IOException {
+        getQueryEngine().addStatements(d.getStatements());
+
+        if (Brainstem.RELAY_OSC) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            // note: direct instantiation of a format-specific writer (as opposed to classloading via Rio)
+            // makes things simpler w.r.t. Proguard's shrinking phase
+            RDFWriter w = new NTriplesWriter(bos);
+            //RDFWriter w = Rio.createWriter(RDFFormat.NTRIPLES, bos);
+            try {
+                w.startRDF();
+                for (Statement s : d.getStatements()) {
+                    w.handleStatement(s);
+                }
+                w.endRDF();
+            } catch (RDFHandlerException e) {
+                throw new IOException(e);
+            }
+            OSCMessage m = new OSCMessage("/exo/fctr/tt/rdf");
+            m.addArgument(new String(bos.toByteArray()));
+            sendOSCMessageToFacilitator(m);
+        }
     }
 
     public void sendOSCMessageToFacilitator(final OSCMessage m) {

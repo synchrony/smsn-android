@@ -1,10 +1,7 @@
 package net.fortytwo.extendo.brainstem.devices;
 
 import android.util.Log;
-import android.widget.EditText;
 import com.illposed.osc.OSCMessage;
-import net.fortytwo.extendo.Extendo;
-import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brain.ExtendoBrain;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.BrainstemAgent;
@@ -57,7 +54,7 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                         brain.getEventStack().createGestureEvent(agent.getAgentUri().stringValue(), recognizedAt));
                 }*/
 
-                Dataset d = agent.datasetForGestureEvent(recognizedAt.getTime());
+                Dataset d = agent.datasetForGenericBatonGesture(recognizedAt.getTime());
                 try {
                     agent.getQueryEngine().addStatements(d.getStatements());
                     //agent.broadcastDataset(d);

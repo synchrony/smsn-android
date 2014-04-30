@@ -137,10 +137,11 @@ public class TypeatronDictionaryMapping extends PrimitiveStackMapping {
     private final Map<String, ControlValue> dictionary = new HashMap<String, ControlValue>();
 
     public TypeatronDictionaryMapping(final TypeatronControl typeatron,
-                                      final UserDictionary userDictionary) throws RippleException {
+                                      final UserDictionary userDictionary,
+                                      final ModelConnection mc) throws RippleException {
 
         // Typeatron hardware library
-        // TODO: l = laser
+        add(new LaserPointerMapping(typeatron), "l", "laser");
         add(new GetLightLevelMapping(typeatron), "ll", "light");
         add(new MorseMapping(typeatron), "m", "morse");
         add(new SpeakMapping(typeatron), "s", "speak");

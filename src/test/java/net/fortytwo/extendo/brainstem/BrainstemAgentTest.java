@@ -41,7 +41,7 @@ public class BrainstemAgentTest {
             //System.out.println("\t" + l.getFipaName() + ": " + l.getFormat().getName());
         }
 
-        Dataset ds = agent.datasetForGestureEvent(System.currentTimeMillis());
+        Dataset ds = agent.datasetForGenericBatonGesture(System.currentTimeMillis());
 
         assertEquals(5, ds.getStatements().size());
 
