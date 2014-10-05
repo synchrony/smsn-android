@@ -14,9 +14,12 @@ import net.fortytwo.rdfagents.model.Dataset;
 import java.util.Date;
 
 /**
+ * A controller for the Extend-o-Hand gestural glove
+ *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class ExtendoHandControl extends BluetoothDeviceControl {
+
     public ExtendoHandControl(final String address,
                               final OSCDispatcher oscDispatcher,
                               final ExtendoBrain brain,

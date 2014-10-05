@@ -7,7 +7,6 @@ import com.illposed.osc.OSCPacket;
 import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
-import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -16,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class OSCDispatcher {
@@ -29,11 +29,11 @@ public class OSCDispatcher {
         listeners = new HashSet<OSCMessageListener>();
     }
 
-    public void register(final String address,
+    public void register(final String oscAddress,
                          final OSCMessageHandler handler) {
         // note: no checking for duplicate addresses
 
-        handlers.put(address, handler);
+        handlers.put(oscAddress, handler);
     }
 
     public void addListener(final OSCMessageListener listener) {
@@ -87,16 +87,6 @@ public class OSCDispatcher {
 
             if (!dispatch((OSCMessage) p)) {
                 Log.w(Brainstem.TAG, "no OSC handler at address " + ((OSCMessage) p).getAddress());
-
-                /*
-                // TODO: temporary debugging code
-                String address = ((OSCMessage) p).getAddress();
-                StringBuilder sb = new StringBuilder("address bytes:");
-                for (byte b : address.getBytes()) {
-                    sb.append(" ").append((int) b);
-                }
-                Log.w(Brainstem.TAG, sb.toString());
-                */
             }
         } else {
             Log.w(Brainstem.TAG, "OSC packet is of non-message type " + p.getClass().getSimpleName() + ": " + p);
@@ -113,11 +103,16 @@ public class OSCDispatcher {
             Log.w(Brainstem.TAG, "can't send OSC message; message writer is null");
         } else {
             try {
-                //OSCBundle bundle = new OSCBundle();
-                //bundle.addPacket(message);
-                //messageWriter.sendMessage(bundle.getByteArray());
-                messageWriter.sendMessage(message.getByteArray());
+                //messageWriter.sendMessage(message.getByteArray());
+
+                // Arduino-based Extendo devices receive OSC bundles and send OSC messages
+                OSCBundle bundle = new OSCBundle();
+                bundle.addPacket(message);
+                messageWriter.sendMessage(bundle.getByteArray());
             } catch (IOException e) {
+                Log.e(Brainstem.TAG, "I/O error while sending OSC message: " + e.getMessage());
+                e.printStackTrace(System.err);
+            } catch (BluetoothManager.BluetoothException e) {
                 Log.e(Brainstem.TAG, "error while sending OSC message: " + e.getMessage());
                 e.printStackTrace(System.err);
             }

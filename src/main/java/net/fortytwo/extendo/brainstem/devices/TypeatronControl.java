@@ -21,6 +21,8 @@ import java.io.PipedOutputStream;
 import java.util.Date;
 
 /**
+ * A controller for the Typeatron chorded keyer
+ *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class TypeatronControl extends BluetoothDeviceControl {
@@ -31,6 +33,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
             EXO_TT_MODE = "/exo/tt/mode",
             EXO_TT_MORSE = "/exo/tt/morse",
             EXO_TT_PHOTO_GET = "/exo/tt/photo/get",
+            EXO_TT_PING = "/exo/tt/ping",
             EXO_TT_VIBR = "/exo/tt/vibr";
 
     // inbound addresses
@@ -55,10 +58,10 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
     private URI thingPointedTo;
 
-    public TypeatronControl(final String address,
+    public TypeatronControl(final String bluetoothAddress,
                             final OSCDispatcher oscDispatcher,
                             final Brainstem brainstem) throws DeviceInitializationException {
-        super(address, oscDispatcher);
+        super(bluetoothAddress, oscDispatcher);
 
         this.brainstem = brainstem;
         try {
@@ -107,7 +110,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
                     brainstem.getToaster().makeText("error message from Typeatron: " + args[0]);
-                    Log.e(Brainstem.TAG, "error message from Typeatron " + address + ": " + args[0]);
+                    Log.e(Brainstem.TAG, "error message from Typeatron " + bluetoothAddress + ": " + args[0]);
                 } else {
                     Log.e(Brainstem.TAG, "wrong number of arguments in Typeatron error message");
                 }
@@ -119,7 +122,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
                 Object[] args = message.getArguments();
                 if (1 == args.length) {
                     //brainstem.getToaster().makeText("\ninfo message from Typeatron: " + args[0]);
-                    Log.i(Brainstem.TAG, "info message from Typeatron " + address + ": " + args[0]);
+                    Log.i(Brainstem.TAG, "info message from Typeatron " + bluetoothAddress + ": " + args[0]);
                 } else {
                     Log.e(Brainstem.TAG, "wrong number of arguments in Typeatron info message");
                 }
@@ -182,10 +185,11 @@ public class TypeatronControl extends BluetoothDeviceControl {
                 // note: argument is ignored for now; in future, it could be used to synchronize clocks
 
                 // we assume this reply is a response to the latest ping
+                // TODO: we don't have to... why not send and receive latestPing in the message
                 long delay = System.currentTimeMillis() - latestPing;
 
-                brainstem.getToaster().makeText("ping reply received from Typeatron " + address + " in " + delay + "ms");
-                Log.i(Brainstem.TAG, "ping reply received from Typeatron " + address + " in " + delay + "ms");
+                brainstem.getToaster().makeText("ping reply received from Typeatron " + bluetoothAddress + " in " + delay + "ms");
+                Log.i(Brainstem.TAG, "ping reply received from Typeatron " + bluetoothAddress + " in " + delay + "ms");
             }
         });
 
@@ -217,7 +221,7 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
     @Override
     protected void onConnect() {
-        doPing();
+        sendPing();
     }
 
     private String modifySymbol(final String symbol,
@@ -267,6 +271,15 @@ public class TypeatronControl extends BluetoothDeviceControl {
             Log.i(Brainstem.TAG, (isAlive ? "" : "NOT ") + "writing '" + symbol + "' to Emacs...");
             source.write(symbol.getBytes());
         }
+    }
+
+    private long latestPing;
+
+    public void sendPing() {
+        OSCMessage message = new OSCMessage(EXO_TT_PING);
+        latestPing = System.currentTimeMillis();
+        message.addArgument(latestPing);
+        send(message);
     }
 
     // feedback to the Typeatron whenever mode changes

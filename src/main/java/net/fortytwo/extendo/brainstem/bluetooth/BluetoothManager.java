@@ -21,12 +21,16 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
+ * An interface for Serial Line Internet Protocol (SLIP) communication with a single device over Bluetooth
+ *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class BluetoothManager {
 
     private static final int REQUEST_ENABLE_BT = 424242;
 
+    // Serial Port Profile UUID
+    //     See: http://en.wikipedia.org/wiki/List_of_Bluetooth_profiles#Serial_Port_Profile
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     public static final int
@@ -62,7 +66,7 @@ public class BluetoothManager {
     }
 
     public void register(final BluetoothDeviceControl device) {
-        registeredDeviceControlsByAddress.put(device.getAddress(), device);
+        registeredDeviceControlsByAddress.put(device.getBluetoothAddress(), device);
     }
 
     public synchronized void start(final Activity activity) throws BluetoothException {
@@ -148,16 +152,6 @@ public class BluetoothManager {
         }
     }
 
-    public class BluetoothException extends Exception {
-        public BluetoothException(final String message) {
-            super(message);
-        }
-
-        public BluetoothException(final Throwable cause) {
-            super(cause);
-        }
-    }
-
     private boolean isBondedExtendoDevice(final BluetoothDevice device) {
         return null != registeredDeviceControlsByAddress.get(device.getAddress())
                 && BluetoothDevice.BOND_BONDED == device.getBondState();
@@ -208,7 +202,7 @@ public class BluetoothManager {
 
         private boolean closed;
 
-        public BluetoothOSCThread(BluetoothSocket socket) throws IOException {
+        public BluetoothOSCThread(final BluetoothSocket socket) throws IOException {
             this.device = socket.getRemoteDevice();
             this.inputStream = socket.getInputStream();
             this.outputStream = socket.getOutputStream();
@@ -344,9 +338,23 @@ public class BluetoothManager {
             this.outputStream = outputStream;
         }
 
-        public void sendMessage(final byte[] message) throws IOException {
+        public void sendMessage(final byte[] message) throws IOException, BluetoothException {
+            if (message.length > 128) {
+                throw new BluetoothException("message length (" + message.length + " bytes) exceeds SPP limit (128 bytes)");
+            }
+
             outputStream.write(message);
             outputStream.write(SLIP_FRAME_END);
+        }
+    }
+
+    public class BluetoothException extends Exception {
+        public BluetoothException(final String message) {
+            super(message);
+        }
+
+        public BluetoothException(final Throwable cause) {
+            super(cause);
         }
     }
 }

@@ -64,7 +64,6 @@ public class Main extends Activity implements TextToSpeech.OnInitListener {
         findViewById(R.id.back).setOnClickListener(backListener);
         findViewById(R.id.tryme).setOnClickListener(trymeListener);
         findViewById(R.id.ping).setOnClickListener(pingListener);
-        findViewById(R.id.btPing).setOnClickListener(bluetoothPingListener);
         findViewById(R.id.flashcards).setOnClickListener(flashcardsListener);
         findViewById(R.id.events).setOnClickListener(eventsListener);
 
@@ -200,14 +199,6 @@ public class Main extends Activity implements TextToSpeech.OnInitListener {
         public void onClick(View v) {
             texter.setText("pinging facilitator connection");
             brainstem.pingFacilitatorConnection();
-        }
-    };
-
-    private OnClickListener bluetoothPingListener = new OnClickListener() {
-
-        public void onClick(View v) {
-            texter.setText("pinging bluetooth device");
-            brainstem.pingExtendoHand();
         }
     };
 

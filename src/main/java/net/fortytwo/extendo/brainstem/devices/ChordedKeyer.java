@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * A recognizer of the Typeatron's five-key chording scheme
+ *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class ChordedKeyer {
@@ -58,6 +60,11 @@ public class ChordedKeyer {
         initializeChords();
     }
 
+    /**
+     * Processes the next input state
+     * @param state the input state, represented by a 4-byte sequence of '0's and '1's
+     */
+    // TODO: do away with the inefficient format, if it doesn't complicate things in Max/MSP
     public void nextInputState(final byte[] state) {
         for (int i = 0; i < 5; i++) {
             // Generally, at most one button should change per time step
@@ -294,6 +301,9 @@ public class ChordedKeyer {
         }
     }
 
+    /**
+     * A handler for each new combination of keyboard mode, output symbol, and symbol modifier
+     */
     public interface EventHandler {
         void handle(Mode mode, String symbol, Modifier modifier);
     }

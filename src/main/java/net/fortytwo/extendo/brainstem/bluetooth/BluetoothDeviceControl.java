@@ -4,21 +4,31 @@ import com.illposed.osc.OSCMessage;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 
 /**
+ * A controller for a Bluetooth slave device,
+ * communicating with it via OSC messages sent and received using the SLIP protocol
+ *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public abstract class BluetoothDeviceControl {
-    private final String address;
+    private final String bluetoothAddress;
     private final OSCDispatcher dispatcher;
     private BluetoothManager.BluetoothMessageWriter messageWriter;
 
-    public BluetoothDeviceControl(final String address,
+    /**
+     * @param bluetoothAddress the Bluetooth address of the remote slave device
+     * @param dispatcher an OSC dispatcher through which to receive messages
+     */
+    public BluetoothDeviceControl(final String bluetoothAddress,
                                   final OSCDispatcher dispatcher) {
-        this.address = address;
+        this.bluetoothAddress = bluetoothAddress;
         this.dispatcher = dispatcher;
     }
 
-    public String getAddress() {
-        return address;
+    /**
+     * @return the Bluetooth address of the remote slave device
+     */
+    public String getBluetoothAddress() {
+        return bluetoothAddress;
     }
 
     public void connect(final BluetoothManager.BluetoothMessageWriter messageWriter) {
@@ -33,16 +43,6 @@ public abstract class BluetoothDeviceControl {
 
     // override this method
     protected void onConnect() {
-    }
-
-    protected long latestPing;
-
-    // convenience method
-    public void doPing() {
-        OSCMessage message = new OSCMessage("/exo/tt/ping");
-        latestPing = System.currentTimeMillis();
-        message.addArgument(latestPing);
-        send(message);
     }
 
     public void send(final OSCMessage message) {

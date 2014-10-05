@@ -403,10 +403,4 @@ public class Brainstem {
             t.printStackTrace(System.err);
         }
     }
-
-    public void pingExtendoHand() {
-        agent.timeOfLastEvent = System.currentTimeMillis();
-        // note: the timestamp argument is not yet used
-        extendoHand.doPing();
-    }
 }
