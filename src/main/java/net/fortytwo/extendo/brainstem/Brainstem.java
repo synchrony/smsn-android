@@ -22,6 +22,7 @@ import net.fortytwo.extendo.p2p.Pinger;
 import net.fortytwo.extendo.util.properties.PropertyException;
 import net.fortytwo.extendo.util.properties.TypedProperties;
 import net.fortytwo.rdfagents.model.Dataset;
+import org.openrdf.model.URI;
 import org.openrdf.query.BindingSet;
 
 import java.io.File;
@@ -219,23 +220,49 @@ public class Brainstem {
                 };
                 agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_ALL_GB_GESTURES, gbGestureAnswerHandler);
 
-                final BindingSetHandler twcDemoHandler = new BindingSetHandler() {
+                final BindingSetHandler twcDemoHandler0 = new BindingSetHandler() {
+                    public void handle(final BindingSet bindings) {
+                        Log.i(Brainstem.TAG, "person " + bindings.getValue("pointedTo")
+                                + " pointed to: " + bindings.getValue("pointedTo"));
+                    }
+                };
+                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_THING_POINTED_TO, twcDemoHandler0);
+
+                final BindingSetHandler twcDemoHandler1 = new BindingSetHandler() {
                     public void handle(final BindingSet bindings) {
                         long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
 
                         toneGenerator.play();
 
-                        String speech = bindings.getValue("pointedToName").stringValue() + ", "
-                                + bindings.getValue("projectName").stringValue();
+                        String speech = bindings.getValue("personPointedToName").stringValue() + ", you're both members of "
+                                + bindings.getValue("orgLabel").stringValue();
                         speaker.speak(speech);
 
                         toaster.makeText("latency (before tone) = " + delay + "ms");
 
-                        Log.i(Brainstem.TAG, "found thing pointed to: " + bindings.getValue("pointedTo") + " (name: "
-                        + bindings.getValue("pointedToName") + ")");
+                        Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with org: "
+                                + bindings.getValue("orgLabel"));
                     }
                 };
-                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_THING_POINTED_TO, twcDemoHandler);
+                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_POINT_WITH_COMMON_ORG, twcDemoHandler1);
+
+                final BindingSetHandler twcDemoHandler2 = new BindingSetHandler() {
+                    public void handle(final BindingSet bindings) {
+                        long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+
+                        toneGenerator.play();
+
+                        String speech = bindings.getValue("personPointedToName").stringValue() + ", you both like "
+                                + ((URI) bindings.getValue("interest")).getLocalName().replaceAll("_", " ");
+                        speaker.speak(speech);
+
+                        toaster.makeText("latency (before tone) = " + delay + "ms");
+
+                        Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with interest: "
+                                + bindings.getValue("interest"));
+                    }
+                };
+                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_POINT_WITH_COMMON_INTEREST, twcDemoHandler2);
 
                 if (RELAY_OSC) {
                     oscDispatcher.addListener(new OSCDispatcher.OSCMessageListener() {

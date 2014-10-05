@@ -55,15 +55,32 @@ public class BrainstemAgent extends ExtendoAgent {
                     "PREFIX tl: <" + Timeline.NAMESPACE + ">\n" +
                     "PREFIX foaf: <" + FOAF.NAMESPACE + ">\n" +
                     "PREFIX rdfs: <" + RDFS.NAMESPACE + ">\n" +
-                    "SELECT ?person ?time ?pointedTo ?pointedToName ?projectName WHERE {\n" +
-                    "?gesture a gesture:Point .\n" +
+                    "SELECT ?person ?pointedTo WHERE {\n" +
                     "?gesture gesture:thingPointedTo ?pointedTo .\n" +
-                    "?pointedTo foaf:name ?pointedToName .\n" +
-                    "?pointedTo foaf:currentProject ?project .\n" +
-                    "?project rdfs:label ?projectName .\n" +
                     "?gesture gesture:expressedBy ?person .\n" +
-                    "?gesture gesture:recognizedAt ?instant .\n" +
-                    "?instant tl:at ?time .\n" +
+                    "}";
+    public static final String QUERY_FOR_POINT_WITH_COMMON_ORG =
+            "PREFIX gesture: <" + ExtendoGesture.NAMESPACE + ">\n" +
+                    "PREFIX tl: <" + Timeline.NAMESPACE + ">\n" +
+                    "PREFIX foaf: <" + FOAF.NAMESPACE + ">\n" +
+                    "PREFIX rdfs: <" + RDFS.NAMESPACE + ">\n" +
+                    "SELECT ?personPointedTo ?personPointedToName ?orgLabel WHERE {\n" +
+                    "?gesture gesture:thingPointedTo ?personPointedTo .\n" +
+                    "?personPointedTo foaf:name ?personPointedToName .\n" +
+                    "?org rdfs:label ?orgLabel .\n" +
+                    "?org foaf:member <http://fortytwo.net/2014/04/twc#JoshuaShinavier> .\n" +
+                    "?org foaf:member ?personPointedTo .\n" +
+                    "}";
+    public static final String QUERY_FOR_POINT_WITH_COMMON_INTEREST =
+            "PREFIX gesture: <" + ExtendoGesture.NAMESPACE + ">\n" +
+                    "PREFIX tl: <" + Timeline.NAMESPACE + ">\n" +
+                    "PREFIX foaf: <" + FOAF.NAMESPACE + ">\n" +
+                    "PREFIX rdfs: <" + RDFS.NAMESPACE + ">\n" +
+                    "SELECT ?personPointedTo ?personPointedToName ?interest WHERE {\n" +
+                    "?personPointedTo foaf:name ?personPointedToName .\n" +
+                    "?gesture gesture:thingPointedTo ?personPointedTo .\n" +
+                    "<http://fortytwo.net/2014/04/twc#JoshuaShinavier> foaf:interest ?interest .\n" +
+                    "?personPointedTo foaf:interest ?interest .\n" +
                     "}";
 
     private DatagramSocket oscSocket;
