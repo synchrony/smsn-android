@@ -19,8 +19,7 @@ import net.fortytwo.extendo.brainstem.devices.ExtendoHandControl;
 import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.p2p.Pinger;
-import net.fortytwo.extendo.util.properties.PropertyException;
-import net.fortytwo.extendo.util.properties.TypedProperties;
+import net.fortytwo.extendo.util.TypedProperties;
 import net.fortytwo.rdfagents.model.Dataset;
 import org.openrdf.model.URI;
 import org.openrdf.query.BindingSet;
@@ -104,7 +103,7 @@ public class Brainstem {
 
         try {
             loadConfiguration();
-        } catch (PropertyException e) {
+        } catch (TypedProperties.PropertyException e) {
             throw new BrainstemException(e);
         }
     }
@@ -151,7 +150,7 @@ public class Brainstem {
     // settings which change more frequently than the APK is loaded, such as network settings.
     // Ideally, this file will go away entirely once the Brainstem becomes reusable software rather than a
     // special-purpose component of a demo.
-    private void loadConfiguration() throws BrainstemException, PropertyException {
+    private void loadConfiguration() throws BrainstemException, TypedProperties.PropertyException {
         // this configuration is currently separate from the main Extendo configuration, which reads from
         // ./extendo.properties.  On Android, this path may be an inaccessible location (in the file system root)
         if (null == configuration) {

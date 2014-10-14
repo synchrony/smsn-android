@@ -12,6 +12,7 @@ import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
 import net.fortytwo.rdfagents.model.Dataset;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * A controller for the Extend-o-Hand gestural glove
@@ -43,9 +44,10 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                 Date recognizedAt = new Date();
 
                 if (Brainstem.VERBOSE) {
-                    Object[] args = message.getArguments();
-                    if (5 == args.length) {
-                        brainstem.getTexter().setText("Extend-o-Hand raw gesture: " + args[0] + " " + args[1] + " " + args[2] + " " + args[3] + " " + args[4]);
+                    List<Object> args = message.getArguments();
+                    if (5 == args.size()) {
+                        brainstem.getTexter().setText("Extend-o-Hand raw gesture: "
+                                + args.get(0) + " " + args.get(1) + " " + args.get(2) + " " + args.get(3) + " " + args.get(4));
                     } else {
                         brainstem.getTexter().setText("Extend-o-Hand error (wrong # of args)");
                     }

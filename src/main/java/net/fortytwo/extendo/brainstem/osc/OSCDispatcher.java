@@ -69,17 +69,7 @@ public class OSCDispatcher {
         return handled;
     }
 
-    public void receive(final byte[] data) {
-
-        if (data[0] != '/') {
-            Log.w(Brainstem.TAG, "not a valid OSC message: " + new String(data));
-            return;
-        }
-
-        OSCByteArrayToJavaConverter c = new OSCByteArrayToJavaConverter();
-
-        OSCPacket p = c.convert(data, data.length);
-
+    public void receive(final OSCPacket p) {
         if (p instanceof OSCMessage) {
             if (Brainstem.VERBOSE) {
                 Log.i(Brainstem.TAG, "received OSC message: " + toString((OSCMessage) p));
@@ -91,6 +81,20 @@ public class OSCDispatcher {
         } else {
             Log.w(Brainstem.TAG, "OSC packet is of non-message type " + p.getClass().getSimpleName() + ": " + p);
         }
+    }
+
+    public void receive(final byte[] data, int length) {
+        /*
+        if (data[0] != '/') {
+            Log.w(Brainstem.TAG, "not a valid OSC message: " + new String(data));
+            return;
+        }*/
+
+        OSCByteArrayToJavaConverter c = new OSCByteArrayToJavaConverter();
+
+        OSCPacket p = c.convert(data, length);
+
+        receive(p);
     }
 
     public void send(final OSCMessage message,

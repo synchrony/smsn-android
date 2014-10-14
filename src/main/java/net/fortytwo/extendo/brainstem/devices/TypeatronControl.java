@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Date;
+import java.util.List;
 
 /**
  * A controller for the Typeatron chorded keyer
@@ -107,10 +108,10 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
         oscDispatcher.register(EXO_TT_ERROR, new OSCMessageHandler() {
             public void handle(OSCMessage message) {
-                Object[] args = message.getArguments();
-                if (1 == args.length) {
-                    brainstem.getToaster().makeText("error message from Typeatron: " + args[0]);
-                    Log.e(Brainstem.TAG, "error message from Typeatron " + bluetoothAddress + ": " + args[0]);
+                List<Object> args = message.getArguments();
+                if (1 == args.size()) {
+                    brainstem.getToaster().makeText("error message from Typeatron: " + args.get(0));
+                    Log.e(Brainstem.TAG, "error message from Typeatron " + bluetoothAddress + ": " + args.get(0));
                 } else {
                     Log.e(Brainstem.TAG, "wrong number of arguments in Typeatron error message");
                 }
@@ -119,10 +120,10 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
         oscDispatcher.register(EXO_TT_INFO, new OSCMessageHandler() {
             public void handle(OSCMessage message) {
-                Object[] args = message.getArguments();
-                if (1 == args.length) {
+                List<Object> args = message.getArguments();
+                if (1 == args.size()) {
                     //brainstem.getToaster().makeText("\ninfo message from Typeatron: " + args[0]);
-                    Log.i(Brainstem.TAG, "info message from Typeatron " + bluetoothAddress + ": " + args[0]);
+                    Log.i(Brainstem.TAG, "info message from Typeatron " + bluetoothAddress + ": " + args.get(0));
                 } else {
                     Log.e(Brainstem.TAG, "wrong number of arguments in Typeatron info message");
                 }
@@ -131,10 +132,10 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
         oscDispatcher.register(EXO_TT_KEYS, new OSCMessageHandler() {
             public void handle(final OSCMessage message) {
-                Object[] args = message.getArguments();
-                if (1 == args.length) {
+                List<Object> args = message.getArguments();
+                if (1 == args.size()) {
                     try {
-                        keyer.nextInputState(((String) args[0]).getBytes());
+                        keyer.nextInputState(((String) args.get(0)).getBytes());
                     } catch (Exception e) {
                         Log.e(Brainstem.TAG, "failed to relay Typeatron input");
                         e.printStackTrace(System.err);
@@ -148,21 +149,21 @@ public class TypeatronControl extends BluetoothDeviceControl {
 
         oscDispatcher.register(EXO_TT_PHOTO_DATA, new OSCMessageHandler() {
             public void handle(OSCMessage message) {
-                Object[] args = message.getArguments();
-                if (7 != args.length) {
+                List<Object> args = message.getArguments();
+                if (7 != args.size()) {
                     throw new IllegalStateException("photoresistor observation has unexpected number of arguments ("
-                            + args.length + "): " + message);
+                            + args.size() + "): " + message);
                 }
 
                 // workaround for unavailable Xerces dependency: make startTime and endTime into xsd:long instead of xsd:dateTime
-                long startTime = ((Date) args[0]).getTime();
-                long endTime = ((Date) args[1]).getTime();
+                long startTime = ((Date) args.get(0)).getTime();
+                long endTime = ((Date) args.get(1)).getTime();
 
-                Integer numberOfMeasurements = (Integer) args[2];
-                Float minValue = (Float) args[3];
-                Float maxValue = (Float) args[4];
-                Float mean = (Float) args[5];
-                Float variance = (Float) args[6];
+                Integer numberOfMeasurements = (Integer) args.get(2);
+                Float minValue = (Float) args.get(3);
+                Float maxValue = (Float) args.get(4);
+                Float mean = (Float) args.get(5);
+                Float variance = (Float) args.get(6);
 
                 ModelConnection mc = rippleSession.getModelConnection();
                 try {

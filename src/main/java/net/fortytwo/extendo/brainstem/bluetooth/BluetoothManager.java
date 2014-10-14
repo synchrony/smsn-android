@@ -9,11 +9,11 @@ import android.content.Intent;
 import android.util.Log;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
+import net.fortytwo.extendo.util.SlipStream;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -21,7 +21,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * An interface for Serial Line Internet Protocol (SLIP) communication with a single device over Bluetooth
+ * An interface for Serial Line Internet Protocol (SLIP) communication with a single device over Bluetooth.
+ * Uses the Serial Port Profile (SPP)
  *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
@@ -30,11 +31,9 @@ public class BluetoothManager {
     private static final int REQUEST_ENABLE_BT = 424242;
 
     // Serial Port Profile UUID
-    //     See: http://en.wikipedia.org/wiki/List_of_Bluetooth_profiles#Serial_Port_Profile
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
-    public static final int
-            SLIP_FRAME_END = 0xC0;
+    private static final int SPP_PAYLOAD_CAPACITY = 128;
 
     private boolean started = false;
 
@@ -76,7 +75,7 @@ public class BluetoothManager {
 
         adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null) {
-            throw new BluetoothException("device does not support Bluetooth");
+            throw new BluetoothException("this device does not support Bluetooth");
         }
 
         if (adapter.isEnabled()) {
@@ -97,6 +96,7 @@ public class BluetoothManager {
         }
 
         if (!bluetoothEnabled) {
+            Log.w(Brainstem.TAG, "failed to activate Bluetooth");
             return;
         }
 
@@ -106,7 +106,7 @@ public class BluetoothManager {
 
         if (pairedDevices.size() > 0) {
             int count = 0;
-            StringBuilder sb = new StringBuilder("found bonded Extendo devices:\n");
+            StringBuilder sb = new StringBuilder("bonded Extendo devices:\n");
 
             for (BluetoothDevice d : pairedDevices) {
                 if (isBondedExtendoDevice(d)) {
@@ -123,8 +123,10 @@ public class BluetoothManager {
             if (count > 0) {
                 Log.i(Brainstem.TAG, sb.toString());
             } else {
-                Log.w(Brainstem.TAG, "did not find any bonded Extendo devices");
+                Log.w(Brainstem.TAG, "no bonded Extendo devices");
             }
+        } else {
+            Log.i(Brainstem.TAG, "no paired Extendo devices");
         }
 
         //serverThread = new ServerThread();
@@ -218,50 +220,32 @@ public class BluetoothManager {
             closed = true;
         }
 
+        private boolean isConnected;
+
         @Override
         public void run() {
-            // messages from Extendo devices are generally very short
-            byte[] buffer = new byte[1024];
-
             try {
                 Log.i(Brainstem.TAG, "starting Bluetooth+OSC thread");
 
-                byte[] foo = new byte[]{(byte) 0xC0, (byte) 0xDB, (byte) 0xDC, (byte) 0xDD};
-                Log.i(Brainstem.TAG, "SLIP frame end: " + (int) foo[0]);
-                Log.i(Brainstem.TAG, "SLIP frame escape: " + (int) foo[1]);
-                Log.i(Brainstem.TAG, "SLIP transposed frame end: " + (int) foo[2]);
-                Log.i(Brainstem.TAG, "SLIP transposed frame escape: " + (int) foo[3]);
-
-                int index = 0;
-
-                // first datagram may be fragmentary, and will be discarded
-                boolean isConnected = false;
-
                 while (!closed) {
-                    int b = inputStream.read();
-                    if (b == SLIP_FRAME_END) {
-                        if (isConnected) {
-                            if (index > 0) {
-                                byte[] data = Arrays.copyOfRange(buffer, 0, index);
+                    isConnected = false;
 
-                                dispatcher.receive(data);
+                    SlipStream slipStream = new SlipStream();
+                    slipStream.receive(inputStream, new SlipStream.PacketHandler() {
+                        public void handle(byte[] packet, int length) throws Exception {
+                            if (isConnected) {
+                                dispatcher.receive(packet, length);
+                            } else {
+                                // at this point, we are sure we have a SLIP connection,
+                                // so fire the device's connection event(s)
+                                // TODO: do we really need to wait until we have incoming data, or do we know earlier that we have a SLIP connection?
+                                registeredDeviceControlsByAddress.get(device.getAddress()).connect(
+                                        new BluetoothMessageWriter(device, outputStream));
                             }
-                        } else {
-                            // at this point, we are sure we have a SLIP connection,
-                            // so fire the device's connection event(s)
-                            // TODO: do we really need to wait until we have incoming data, or do we know earlier that we have a SLIP connection?
-                            registeredDeviceControlsByAddress.get(device.getAddress()).connect(
-                                    new BluetoothMessageWriter(device, outputStream));
-                        }
 
-                        index = 0;
-
-                        isConnected = true;
-                    } else {
-                        if (isConnected) {
-                            buffer[index++] = (byte) b;
+                            isConnected = true;
                         }
-                    }
+                    });
                 }
             } catch (Throwable t) {
                 Log.e(Brainstem.TAG, "Bluetooth I/O thread failed with error: " + t.getMessage());
@@ -331,20 +315,23 @@ public class BluetoothManager {
     public class BluetoothMessageWriter {
         private final BluetoothDevice device;
         private final OutputStream outputStream;
+        private final SlipStream slipStream;
 
         public BluetoothMessageWriter(final BluetoothDevice device,
                                       final OutputStream outputStream) {
             this.device = device;
             this.outputStream = outputStream;
+            this.slipStream = new SlipStream();
         }
 
         public void sendMessage(final byte[] message) throws IOException, BluetoothException {
-            if (message.length > 128) {
-                throw new BluetoothException("message length (" + message.length + " bytes) exceeds SPP limit (128 bytes)");
+            if (message.length >= SPP_PAYLOAD_CAPACITY) {
+                // SLIP will expand a message by at least one byte (for END),
+                // sometimes many bytes (depending on the number of escape sequences required)
+                Log.w(Brainstem.TAG, "message length (" + message.length + " bytes) should be kept well under SPP payload capacity (128 bytes)");
             }
 
-            outputStream.write(message);
-            outputStream.write(SLIP_FRAME_END);
+            slipStream.send(outputStream, message);
         }
     }
 
