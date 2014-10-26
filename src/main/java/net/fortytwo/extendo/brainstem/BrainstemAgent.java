@@ -87,7 +87,9 @@ public class BrainstemAgent extends ExtendoAgent {
     private InetAddress oscAddress;
     private int oscPort;
 
-    public BrainstemAgent(final String agentUri) throws QueryEngine.InvalidQueryException, IOException, QueryEngine.IncompatibleQueryException {
+    public BrainstemAgent(final String agentUri)
+            throws QueryEngine.InvalidQueryException, IOException, QueryEngine.IncompatibleQueryException {
+
         super(agentUri, true);
     }
 

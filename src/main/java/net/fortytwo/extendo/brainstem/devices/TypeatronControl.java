@@ -140,7 +140,6 @@ public class TypeatronControl extends BluetoothDeviceControl {
                         Log.e(Brainstem.TAG, "failed to relay Typeatron input");
                         e.printStackTrace(System.err);
                     }
-                    //brainstem.getToaster().makeText("Typeatron keys: " + args[0] + " (" + totalButtonsCurrentlyPressed + " pressed)");
                 } else {
                     brainstem.getToaster().makeText("Typeatron control error (wrong # of args)");
                 }
@@ -155,7 +154,8 @@ public class TypeatronControl extends BluetoothDeviceControl {
                             + args.size() + "): " + message);
                 }
 
-                // workaround for unavailable Xerces dependency: make startTime and endTime into xsd:long instead of xsd:dateTime
+                // workaround for unavailable Xerces dependency:
+                // make startTime and endTime into xsd:long instead of xsd:dateTime
                 long startTime = ((Date) args.get(0)).getTime();
                 long endTime = ((Date) args.get(1)).getTime();
 
@@ -189,7 +189,8 @@ public class TypeatronControl extends BluetoothDeviceControl {
                 // TODO: we don't have to... why not send and receive latestPing in the message
                 long delay = System.currentTimeMillis() - latestPing;
 
-                brainstem.getToaster().makeText("ping reply received from Typeatron " + bluetoothAddress + " in " + delay + "ms");
+                brainstem.getToaster().makeText(
+                        "ping reply received from Typeatron " + bluetoothAddress + " in " + delay + "ms");
                 Log.i(Brainstem.TAG, "ping reply received from Typeatron " + bluetoothAddress + " in " + delay + "ms");
             }
         });
@@ -257,9 +258,11 @@ public class TypeatronControl extends BluetoothDeviceControl {
                     try {
                         client.run();
                     } catch (BrainModeClient.ExecutionException e) {
-                        Log.e(Brainstem.TAG, "Brain-mode client giving up due to execution exception: " + e.getMessage());
+                        Log.e(Brainstem.TAG,
+                                "Brain-mode client giving up due to execution exception: " + e.getMessage());
                     } catch (Throwable t) {
-                        Log.e(Brainstem.TAG, "Brain-mode client thread died with error: " + t.getMessage());
+                        Log.e(Brainstem.TAG,
+                                "Brain-mode client thread died with error: " + t.getMessage());
                         t.printStackTrace(System.err);
                     } finally {
                         isAlive = false;

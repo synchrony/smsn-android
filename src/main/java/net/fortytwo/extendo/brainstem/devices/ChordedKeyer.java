@@ -126,10 +126,9 @@ public class ChordedKeyer {
         }
 
         if (null != cur.mode && null != cur.symbol) {
-            throw new IllegalStateException("sequence has been assigned both an output symbol and an output mode: " + sequence);
-        } //else if (null != cur.modifier && Modifier.None != cur.modifier && (null != cur.mode || null != cur.symbol)) {
-        //  throw new IllegalStateException("sequence has output modifier and also output symbol or mode");
-        //}
+            throw new IllegalStateException(
+                    "sequence has been assigned both an output symbol and an output mode: " + sequence);
+        }
     }
 
     private void initializeChords() throws IOException {

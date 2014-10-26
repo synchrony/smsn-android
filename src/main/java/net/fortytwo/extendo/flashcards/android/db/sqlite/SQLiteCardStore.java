@@ -36,7 +36,10 @@ public class SQLiteCardStore<Q, A> implements CardStore<Q, A> {
 
     public Card<Q, A> find(final Deck<Q, A> deck,
                            final String cardName) {
-        String[] cols = new String[]{SQLiteGameHistory.CARDS__DECK, SQLiteGameHistory.CARDS__CARD, SQLiteGameHistory.CARDS__DATA};
+        String[] cols = new String[]{
+                SQLiteGameHistory.CARDS__DECK,
+                SQLiteGameHistory.CARDS__CARD,
+                SQLiteGameHistory.CARDS__DATA};
         CloseableIterator<Card<Q, A>> iter = new CursorIterator(database.query(SQLiteGameHistory.CARDS,
                 cols,
                 SQLiteGameHistory.CARDS__DECK + "=?",
@@ -56,7 +59,10 @@ public class SQLiteCardStore<Q, A> implements CardStore<Q, A> {
     }
 
     public CloseableIterator<Card<Q, A>> findAll(final Deck<Q, A> deck) {
-        String[] cols = new String[]{SQLiteGameHistory.CARDS__DECK, SQLiteGameHistory.CARDS__CARD, SQLiteGameHistory.CARDS__DATA};
+        String[] cols = new String[]{
+                SQLiteGameHistory.CARDS__DECK,
+                SQLiteGameHistory.CARDS__CARD,
+                SQLiteGameHistory.CARDS__DATA};
         return new CursorIterator(database.query(SQLiteGameHistory.CARDS,
                 cols,
                 SQLiteGameHistory.CARDS__DECK + "=?",

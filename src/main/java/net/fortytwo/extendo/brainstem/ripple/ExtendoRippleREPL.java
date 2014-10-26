@@ -29,7 +29,8 @@ public class ExtendoRippleREPL {
         this.session = session;
         this.typeatron = typeatron;
         userDictionary = new UserDictionary(typeatron);
-        typeatronDictionary = new ControlValue(new TypeatronDictionaryMapping(typeatron, userDictionary, session.getModelConnection()));
+        typeatronDictionary = new ControlValue(
+                new TypeatronDictionaryMapping(typeatron, userDictionary, session.getModelConnection()));
 
         // TODO: temporary, for a demo
         String[][] shortcuts = {

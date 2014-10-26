@@ -12,7 +12,8 @@ import net.fortytwo.extendo.flashcards.db.GameHistory;
 import java.io.IOException;
 
 /**
- * Note: in ordering results by increasing HISTORY__ID instead of HISTORY__TIME, it is assumed that these have the same order.
+ * Note: in ordering results by increasing HISTORY__ID instead of HISTORY__TIME,
+ * it is assumed that these have the same order.
  *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
@@ -32,7 +33,12 @@ public class SQLiteGameHistory extends GameHistory {
             HISTORY__RESULT = "result",
             HISTORY__TIME = "time";
 
-    private final String[] COLUMNS = new String[]{HISTORY__ID, HISTORY__DECK, HISTORY__CARD, HISTORY__TIME, HISTORY__RESULT};
+    private final String[] COLUMNS = new String[]{
+            HISTORY__ID,
+            HISTORY__DECK,
+            HISTORY__CARD,
+            HISTORY__TIME,
+            HISTORY__RESULT};
 
     private final SQLiteDatabase database;
 
@@ -67,7 +73,8 @@ public class SQLiteGameHistory extends GameHistory {
                 System.out.println("replacing " + cardName + " with " + newName);
                 ContentValues up = new ContentValues();
                 up.put(HISTORY__CARD, newName);
-                db.update(HISTORY, up, "deck=? AND card=? AND time=?", new String[]{t.getDeckName(), t.getCardName(), String.valueOf(t.getTime())});
+                db.update(HISTORY, up, "deck=? AND card=? AND time=?",
+                    new String[]{t.getDeckName(), t.getCardName(), String.valueOf(t.getTime())});
             }
         }
     }

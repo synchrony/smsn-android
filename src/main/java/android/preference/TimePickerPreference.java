@@ -10,7 +10,6 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TimePicker;
 
-
 /**
  * A preference type that allows a user to choose a time
  */
@@ -110,7 +109,8 @@ public class TimePickerPreference extends DialogPreference implements TimePicker
     */
     @Override
     public void setDefaultValue(Object defaultValue) {
-        // BUG this method is never called if you use the 'android:defaultValue' attribute in your XML preference file, not sure why it isn't
+        // BUG this method is never called if you use the 'android:defaultValue' attribute in your XML preference file,
+        // not sure why it isn't
 
         super.setDefaultValue(defaultValue);
 

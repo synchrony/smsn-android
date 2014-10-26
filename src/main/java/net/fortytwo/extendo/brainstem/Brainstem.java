@@ -233,7 +233,8 @@ public class Brainstem {
 
                         toneGenerator.play();
 
-                        String speech = bindings.getValue("personPointedToName").stringValue() + ", you're both members of "
+                        String speech = bindings.getValue("personPointedToName").stringValue()
+                                + ", you're both members of "
                                 + bindings.getValue("orgLabel").stringValue();
                         speaker.speak(speech);
 
@@ -361,7 +362,8 @@ public class Brainstem {
 
         private int getValidSampleRate() {
             for (int rate : new int[]{8000, 11025, 16000, 22050, 44100}) {  // add the rates you wish to check against
-                int bufferSize = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_CONFIGURATION_DEFAULT, AudioFormat.ENCODING_PCM_16BIT);
+                int bufferSize = AudioRecord.getMinBufferSize(
+                        rate, AudioFormat.CHANNEL_CONFIGURATION_DEFAULT, AudioFormat.ENCODING_PCM_16BIT);
                 if (bufferSize > 0) {
                     return rate;
                 }

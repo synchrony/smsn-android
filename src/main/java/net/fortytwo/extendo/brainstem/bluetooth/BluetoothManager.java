@@ -169,7 +169,8 @@ public class BluetoothManager {
         if (null == socket) {
             Log.w(Brainstem.TAG, "null Bluetooth socket");
         } else if (null == socket.getInputStream() || null == socket.getOutputStream()) {
-            Log.e(Brainstem.TAG, "Bluetooth socket for " + socket.getRemoteDevice().getName() + " has null input or output stream");
+            Log.e(Brainstem.TAG, "Bluetooth socket for " + socket.getRemoteDevice().getName()
+                    + " has null input or output stream");
         } else {
             Log.i(Brainstem.TAG, "attempting connection to Extendo device " + socket.getRemoteDevice().getName());
             socket.connect();
@@ -183,14 +184,17 @@ public class BluetoothManager {
     public synchronized void connectDevices() {
         for (BluetoothDevice device : managedDevicesByAddress.values()) {
             if (!connectedDeviceAddresses.contains(device.getAddress())) {
-                Log.i(Brainstem.TAG, "attempting to connect to Bluetooth device " + device.getName() + " at " + device.getAddress());
+                Log.i(Brainstem.TAG, "attempting to connect to Bluetooth device " + device.getName()
+                        + " at " + device.getAddress());
                 try {
                     BluetoothSocket socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
                     connectToSocket(socket);
                 } catch (IOException e) {
-                    Log.i(Brainstem.TAG, "could not connect to Bluetooth device " + device.getName() + ". Will try again later.");
+                    Log.i(Brainstem.TAG, "could not connect to Bluetooth device " + device.getName()
+                            + ". Will try again later.");
                 } catch (Throwable t) {
-                    Log.e(Brainstem.TAG, "error while attempting to connect to Bluetooth device " + device.getName() + ": " + t.getMessage());
+                    Log.e(Brainstem.TAG, "error while attempting to connect to Bluetooth device "
+                            + device.getName() + ": " + t.getMessage());
                     t.printStackTrace(System.err);
                 }
             }
@@ -238,7 +242,8 @@ public class BluetoothManager {
                             } else {
                                 // at this point, we are sure we have a SLIP connection,
                                 // so fire the device's connection event(s)
-                                // TODO: do we really need to wait until we have incoming data, or do we know earlier that we have a SLIP connection?
+                                // TODO: do we really need to wait until we have incoming data,
+                                // or do we know earlier that we have a SLIP connection?
                                 registeredDeviceControlsByAddress.get(device.getAddress()).connect(
                                         new BluetoothMessageWriter(device, outputStream));
                             }
@@ -328,7 +333,8 @@ public class BluetoothManager {
             if (message.length >= SPP_PAYLOAD_CAPACITY) {
                 // SLIP will expand a message by at least one byte (for END),
                 // sometimes many bytes (depending on the number of escape sequences required)
-                Log.w(Brainstem.TAG, "message length (" + message.length + " bytes) should be kept well under SPP payload capacity (128 bytes)");
+                Log.w(Brainstem.TAG, "message length (" + message.length
+                        + " bytes) should be kept well under SPP payload capacity (128 bytes)");
             }
 
             slipStream.send(outputStream, message);

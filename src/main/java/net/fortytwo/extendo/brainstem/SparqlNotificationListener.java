@@ -41,7 +41,8 @@ public class SparqlNotificationListener {
                     try {
                         listenForNotifications();
                     } catch (Throwable e) {
-                        Log.e(Brainstem.TAG, "SPARQL notification listener stream closed with error: " + e.getMessage());
+                        Log.e(Brainstem.TAG,
+                                "SPARQL notification listener stream closed with error: " + e.getMessage());
                         e.printStackTrace(System.err);
                     }
                 }

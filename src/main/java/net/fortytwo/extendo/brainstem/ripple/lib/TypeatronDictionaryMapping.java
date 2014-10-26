@@ -327,7 +327,8 @@ public class TypeatronDictionaryMapping extends PrimitiveStackMapping {
 
     public String getComment() {
         return "a specialized variant of Ripple's 'op' operator." +
-                "  It activates any of a Typeatron-specific library of primitives based on a set of rapid-input aliases";
+                " It activates any of a Typeatron-specific library of primitives" +
+                " based on a set of rapid-input aliases";
     }
 
     public void apply(final RippleList arg,

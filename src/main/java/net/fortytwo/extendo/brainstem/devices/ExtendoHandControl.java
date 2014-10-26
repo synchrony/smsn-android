@@ -47,7 +47,8 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                     List<Object> args = message.getArguments();
                     if (5 == args.size()) {
                         brainstem.getTexter().setText("Extend-o-Hand raw gesture: "
-                                + args.get(0) + " " + args.get(1) + " " + args.get(2) + " " + args.get(3) + " " + args.get(4));
+                                + args.get(0) + " " + args.get(1) + " " + args.get(2)
+                                + " " + args.get(3) + " " + args.get(4));
                     } else {
                         brainstem.getTexter().setText("Extend-o-Hand error (wrong # of args)");
                     }
