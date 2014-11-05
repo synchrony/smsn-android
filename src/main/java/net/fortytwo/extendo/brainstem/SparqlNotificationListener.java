@@ -17,9 +17,9 @@ public class SparqlNotificationListener {
 
     private String host;
     private int port;
-    private final Brainstem.NotificationToneGenerator toneGenerator;
+    private final NotificationToneGenerator toneGenerator;
 
-    public SparqlNotificationListener(final Brainstem.NotificationToneGenerator toneGenerator) {
+    public SparqlNotificationListener(final NotificationToneGenerator toneGenerator) {
         this.toneGenerator = toneGenerator;
     }
 

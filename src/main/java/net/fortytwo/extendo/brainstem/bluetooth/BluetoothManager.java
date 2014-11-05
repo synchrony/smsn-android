@@ -8,8 +8,9 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.util.Log;
 import net.fortytwo.extendo.brainstem.Brainstem;
-import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
-import net.fortytwo.extendo.util.SlipStream;
+import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
+import net.fortytwo.extendo.p2p.osc.SlipOscControl;
+import net.fortytwo.extendo.util.SlipInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,8 +34,6 @@ public class BluetoothManager {
     // Serial Port Profile UUID
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
-    private static final int SPP_PAYLOAD_CAPACITY = 128;
-
     private boolean started = false;
 
     // note: currently, we never change this variable once Bluetooth is initially enabled
@@ -42,7 +41,7 @@ public class BluetoothManager {
 
     private BluetoothAdapter adapter;
 
-    private final Map<String, BluetoothDeviceControl> registeredDeviceControlsByAddress;
+    private final Map<String, SlipOscControl> registeredDeviceControlsByAddress;
     private final Map<String, BluetoothDevice> managedDevicesByAddress;
     private final Set<String> connectedDeviceAddresses;
 
@@ -59,13 +58,14 @@ public class BluetoothManager {
     }
 
     private BluetoothManager() {
-        registeredDeviceControlsByAddress = new HashMap<String, BluetoothDeviceControl>();
+        registeredDeviceControlsByAddress = new HashMap<String, SlipOscControl>();
         managedDevicesByAddress = new HashMap<String, BluetoothDevice>();
         connectedDeviceAddresses = new HashSet<String>();
     }
 
-    public void register(final BluetoothDeviceControl device) {
-        registeredDeviceControlsByAddress.put(device.getBluetoothAddress(), device);
+    public void register(final String bluetoothAddress,
+                         final SlipOscControl device) {
+        registeredDeviceControlsByAddress.put(bluetoothAddress, device);
     }
 
     public synchronized void start(final Activity activity) throws BluetoothException {
@@ -234,8 +234,8 @@ public class BluetoothManager {
                 while (!closed) {
                     isConnected = false;
 
-                    SlipStream slipStream = new SlipStream();
-                    slipStream.receive(inputStream, new SlipStream.PacketHandler() {
+                    SlipInputStream slipStream = new SlipInputStream(inputStream);
+                    slipStream.receive(new SlipInputStream.PacketHandler() {
                         public void handle(byte[] packet, int length) throws Exception {
                             if (isConnected) {
                                 dispatcher.receive(packet, length);
@@ -245,7 +245,7 @@ public class BluetoothManager {
                                 // TODO: do we really need to wait until we have incoming data,
                                 // or do we know earlier that we have a SLIP connection?
                                 registeredDeviceControlsByAddress.get(device.getAddress()).connect(
-                                        new BluetoothMessageWriter(device, outputStream));
+                                        outputStream);
                             }
 
                             isConnected = true;
@@ -314,30 +314,6 @@ public class BluetoothManager {
 
         public void cancel() throws IOException {
             serverSocket.close();
-        }
-    }
-
-    public class BluetoothMessageWriter {
-        private final BluetoothDevice device;
-        private final OutputStream outputStream;
-        private final SlipStream slipStream;
-
-        public BluetoothMessageWriter(final BluetoothDevice device,
-                                      final OutputStream outputStream) {
-            this.device = device;
-            this.outputStream = outputStream;
-            this.slipStream = new SlipStream();
-        }
-
-        public void sendMessage(final byte[] message) throws IOException, BluetoothException {
-            if (message.length >= SPP_PAYLOAD_CAPACITY) {
-                // SLIP will expand a message by at least one byte (for END),
-                // sometimes many bytes (depending on the number of escape sequences required)
-                Log.w(Brainstem.TAG, "message length (" + message.length
-                        + " bytes) should be kept well under SPP payload capacity (128 bytes)");
-            }
-
-            slipStream.send(outputStream, message);
         }
     }
 

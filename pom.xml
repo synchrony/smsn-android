@@ -17,7 +17,6 @@
 
     <properties>
         <!--<extendo.version>1.1-SNAPSHOT</extendo.version>-->
-        <!--<javaosc.version>0.3</javaosc.version>-->
         <!--<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>-->
     </properties>
@@ -38,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>net.fortytwo.extendo</groupId>
-            <artifactId>extendo-brain</artifactId>
+            <artifactId>typeatron</artifactId>
             <version>${extendo.version}</version>
             <exclusions>
                 <!-- exclude Neo4j, with its non-Androidy dependencies. We will include neo4j-android when we need it -->
@@ -51,12 +50,6 @@
                     <groupId>stax</groupId>
                     <artifactId>stax-api</artifactId>
                 </exclusion>
-                <!-- via Frames. Gremlin and its dependencies are full of dangling class references which make things
-                     interesting for ProGuard.  Exclude it until needed -->
-                <exclusion>
-                    <groupId>com.tinkerpop.gremlin</groupId>
-                    <artifactId>gremlin-groovy</artifactId>
-                </exclusion>
                 <!-- commons-beanutils cause dex to emit "already added" errors, as they include a small number of
                     apache.commons.collections classes, which are also included elsewhere.
                     Fingers crossed that excluding beanutils doesn't cause runtime errors -->
@@ -68,29 +61,6 @@
                     <groupId>commons-beanutils</groupId>
                     <artifactId>commons-beanutils</artifactId>
                 </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>net.fortytwo.extendo</groupId>
-            <artifactId>extendo-p2p</artifactId>
-            <version>${extendo.version}</version>
-            <!--<exclusions>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-            </exclusions>-->
-        </dependency>
-        <dependency>
-            <groupId>net.fortytwo.extendo</groupId>
-            <artifactId>extendo-hand</artifactId>
-            <version>${extendo.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>net.fortytwo.ripple</groupId>
-            <artifactId>ripple-core</artifactId>
-            <version>${ripple.version}</version>
-            <exclusions>
                 <!-- conflict with extendo-p2p -->
                 <exclusion>
                     <groupId>commons-codec</groupId>
@@ -107,6 +77,11 @@
                     <artifactId>httpclient</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.fortytwo.extendo</groupId>
+            <artifactId>extendo-hand</artifactId>
+            <version>${extendo.version}</version>
         </dependency>
         <!--<dependency>
             <groupId>org.neo4j</groupId>
@@ -129,19 +104,6 @@
             <version>${sesame.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.illposed.osc</groupId>
-            <artifactId>javaosc-core</artifactId>
-            <version>${javaosc.version}</version>
-        </dependency>
-
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-queryparser-sparql</artifactId>
-            <version>${sesame.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

@@ -1,9 +1,5 @@
 package net.fortytwo.extendo.brainstem;
 
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioRecord;
-import android.media.AudioTrack;
 import android.util.Log;
 import com.illposed.osc.OSCMessage;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
@@ -13,23 +9,22 @@ import edu.rpi.twc.sesamestream.QueryEngine;
 import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.brain.BrainGraph;
 import net.fortytwo.extendo.brain.ExtendoBrain;
-import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
 import net.fortytwo.extendo.brainstem.devices.ExtendoHandControl;
-import net.fortytwo.extendo.brainstem.devices.TypeatronControl;
-import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
+import net.fortytwo.extendo.p2p.ExtendoAgent;
 import net.fortytwo.extendo.p2p.Pinger;
+import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
+import net.fortytwo.extendo.p2p.osc.SlipOscControl;
+import net.fortytwo.extendo.rdf.Gesture;
+import net.fortytwo.extendo.typeatron.TypeatronControl;
+import net.fortytwo.extendo.typeatron.ripple.Environment;
 import net.fortytwo.extendo.util.TypedProperties;
-import net.fortytwo.rdfagents.model.Dataset;
 import org.openrdf.model.URI;
 import org.openrdf.query.BindingSet;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
 
 /**
@@ -55,11 +50,6 @@ public class Brainstem {
 
     private static final String PROPS_PATH = "/sdcard/brainstem.props";
 
-    private final List<BluetoothDeviceControl> devices;
-
-    private BluetoothDeviceControl extendoHand;
-    private BluetoothDeviceControl typeatron;
-
     private Main.Texter texter;
 
     private final OSCDispatcher oscDispatcher;
@@ -69,12 +59,11 @@ public class Brainstem {
 
     private Properties configuration;
 
-    private BrainstemAgent agent;
+    private ExtendoAgent agent;
     private final ExtendoBrain brain;
 
     private Main.Toaster toaster;
     private Main.Speaker speaker;
-    private boolean emacsAvailable;
 
     private static final Brainstem INSTANCE;
 
@@ -88,9 +77,8 @@ public class Brainstem {
 
     private Brainstem() throws BrainstemException {
         oscDispatcher = new OSCDispatcher();
+        oscDispatcher.setVerbose(VERBOSE);
         bluetoothManager = BluetoothManager.getInstance(oscDispatcher);
-
-        devices = new LinkedList<BluetoothDeviceControl>();
 
         // TODO: this TinkerGraph is a temporary solution
         KeyIndexableGraph g = new TinkerGraph();
@@ -123,10 +111,9 @@ public class Brainstem {
         this.toaster = toaster;
         this.speaker = speaker;
         this.texter = texter;
-        this.emacsAvailable = emacsAvailable;
     }
 
-    public BrainstemAgent getAgent() {
+    public ExtendoAgent getAgent() {
         return agent;
     }
 
@@ -203,21 +190,21 @@ public class Brainstem {
             throw new BrainstemException("who are you? Missing value for " + PROP_AGENTURI);
         } else {
             try {
-                agent = new BrainstemAgent(u);
+                agent = new ExtendoAgent(u, true);
                 Log.i(TAG, "created BrainstemAgent with URI " + u);
 
                 final BindingSetHandler gbGestureAnswerHandler = new BindingSetHandler() {
                     public void handle(final BindingSet bindings) {
-                        long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+                        //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
 
                         toneGenerator.play();
 
-                        toaster.makeText("latency (before tone) = " + delay + "ms");
+                        //toaster.makeText("latency (before tone) = " + delay + "ms");
 
                         Log.i(Brainstem.TAG, "received SPARQL query result: " + bindings);
                     }
                 };
-                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_ALL_GB_GESTURES, gbGestureAnswerHandler);
+                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_ALL_GB_GESTURES, gbGestureAnswerHandler);
 
                 final BindingSetHandler twcDemoHandler0 = new BindingSetHandler() {
                     public void handle(final BindingSet bindings) {
@@ -225,11 +212,11 @@ public class Brainstem {
                                 + " pointed to: " + bindings.getValue("pointedTo"));
                     }
                 };
-                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_THING_POINTED_TO, twcDemoHandler0);
+                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_THING_POINTED_TO, twcDemoHandler0);
 
                 final BindingSetHandler twcDemoHandler1 = new BindingSetHandler() {
                     public void handle(final BindingSet bindings) {
-                        long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+                        //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
 
                         toneGenerator.play();
 
@@ -238,17 +225,17 @@ public class Brainstem {
                                 + bindings.getValue("orgLabel").stringValue();
                         speaker.speak(speech);
 
-                        toaster.makeText("latency (before tone) = " + delay + "ms");
+                        //toaster.makeText("latency (before tone) = " + delay + "ms");
 
                         Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with org: "
                                 + bindings.getValue("orgLabel"));
                     }
                 };
-                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_POINT_WITH_COMMON_ORG, twcDemoHandler1);
+                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_POINT_WITH_COMMON_ORG, twcDemoHandler1);
 
                 final BindingSetHandler twcDemoHandler2 = new BindingSetHandler() {
                     public void handle(final BindingSet bindings) {
-                        long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+                        //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
 
                         toneGenerator.play();
 
@@ -256,13 +243,13 @@ public class Brainstem {
                                 + ((URI) bindings.getValue("interest")).getLocalName().replaceAll("_", " ");
                         speaker.speak(speech);
 
-                        toaster.makeText("latency (before tone) = " + delay + "ms");
+                        //toaster.makeText("latency (before tone) = " + delay + "ms");
 
                         Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with interest: "
                                 + bindings.getValue("interest"));
                     }
                 };
-                agent.getQueryEngine().addQuery(BrainstemAgent.QUERY_FOR_POINT_WITH_COMMON_INTEREST, twcDemoHandler2);
+                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_POINT_WITH_COMMON_INTEREST, twcDemoHandler2);
 
                 if (RELAY_OSC) {
                     oscDispatcher.addListener(new OSCDispatcher.OSCMessageListener() {
@@ -283,27 +270,27 @@ public class Brainstem {
         String extendoHandAddress = configuration.getProperty(PROP_EXTENDOHAND_ADDRESS);
         if (null != extendoHandAddress) {
             Log.i(TAG, "loading Extend-o-Hand device at address " + extendoHandAddress);
-            extendoHand
-                    = new ExtendoHandControl(extendoHandAddress, oscDispatcher, brain, proxy, agent, this);
-            addBluetoothDevice(extendoHand);
+            ExtendoHandControl extendoHand = new ExtendoHandControl(oscDispatcher, brain, proxy, agent, this);
+            addBluetoothDevice(extendoHandAddress, extendoHand);
         }
 
         String typeatronAddress = configuration.getProperty(PROP_TYPEATRON_ADDRESS);
         if (null != typeatronAddress) {
             Log.i(TAG, "loading Typeatron device at address " + typeatronAddress);
+            TypeatronControl typeatron;
             try {
-                typeatron
-                        = new TypeatronControl(typeatronAddress, oscDispatcher, this);
-            } catch (BluetoothDeviceControl.DeviceInitializationException e) {
+                Environment env = new BrainstemEnvironment(this);
+                typeatron = new TypeatronControl(oscDispatcher, this.getAgent(), env);
+            } catch (SlipOscControl.DeviceInitializationException e) {
                 throw new BrainstemException(e);
             }
-            addBluetoothDevice(typeatron);
+            addBluetoothDevice(typeatronAddress, typeatron);
         }
     }
 
-    private void addBluetoothDevice(final BluetoothDeviceControl dc) {
-        devices.add(dc);
-        bluetoothManager.register(dc);
+    private void addBluetoothDevice(final String bluetoothAddress,
+                                    final SlipOscControl dc) {
+        bluetoothManager.register(bluetoothAddress, dc);
     }
 
     public class BrainstemException extends Exception {
@@ -313,78 +300,6 @@ public class Brainstem {
 
         public BrainstemException(final Throwable cause) {
             super(cause);
-        }
-    }
-
-    public class NotificationToneGenerator {
-        // Note: is it possible to generate a tone with lower latency than this default generator's?
-        //private final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
-
-        private final AudioTrack audioTrack;
-        private final int minSize;
-        private final float synth_frequency = 880;
-        private final int sampleRate;
-
-        public NotificationToneGenerator() {
-            sampleRate = getValidSampleRate();
-
-            minSize = AudioTrack.getMinBufferSize(sampleRate,
-                    AudioFormat.CHANNEL_OUT_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT);
-            audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
-                    sampleRate,
-                    AudioFormat.CHANNEL_OUT_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT,
-                    minSize,
-                    AudioTrack.MODE_STREAM);
-        }
-
-        public void play() {
-            //startActivity(new Intent(thisActivity, PlaySound.class));
-
-            //tg.startTone(ToneGenerator.TONE_PROP_BEEP);
-
-            audioTrack.play();
-            short[] buffer = new short[minSize];
-            float angle = 0;
-            //while (true) {
-            //    if (play) {
-            for (int i = 0; i < buffer.length; i++) {
-                float angular_frequency =
-                        (float) (2 * Math.PI) * synth_frequency / sampleRate;
-                buffer[i] = (short) (Short.MAX_VALUE * ((float) Math.sin(angle)));
-                angle += angular_frequency;
-            }
-            audioTrack.write(buffer, 0, buffer.length);
-            //    }
-            //}
-        }
-
-        private int getValidSampleRate() {
-            for (int rate : new int[]{8000, 11025, 16000, 22050, 44100}) {  // add the rates you wish to check against
-                int bufferSize = AudioRecord.getMinBufferSize(
-                        rate, AudioFormat.CHANNEL_CONFIGURATION_DEFAULT, AudioFormat.ENCODING_PCM_16BIT);
-                if (bufferSize > 0) {
-                    return rate;
-                }
-            }
-
-            throw new IllegalStateException("could not find a valid sample rate for audio output");
-        }
-    }
-
-    public void simulateGestureEvent() {
-        agent.timeOfLastEvent = System.currentTimeMillis();
-
-        Date recognizedAt = new Date();
-
-        Dataset d = agent.datasetForGenericBatonGesture(recognizedAt.getTime());
-        try {
-            agent.getQueryEngine().addStatements(d.getStatements());
-            //agent.broadcastDataset(d);
-        } catch (Exception e) {
-            Log.e(Brainstem.TAG, "failed to broadcast RDF dataset: " + e.getMessage());
-            e.printStackTrace(System.err);
         }
     }
 

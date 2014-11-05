@@ -47,8 +47,6 @@
 
         <!-- On the right: another button, this time with its text color
              changed to red.  Again, see colors.xml for the definition. -->
-        <Button android:id="@+id/tryme" style="@style/ActionButton"
-            android:text="@string/tryme" android:textColor="@color/red" />
         <Button android:id="@+id/ping" style="@style/ActionButton"
             android:text="@string/ping" android:textColor="@color/red" />
 

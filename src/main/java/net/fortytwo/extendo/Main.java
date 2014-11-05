@@ -2,8 +2,6 @@ package net.fortytwo.extendo;
 
 import android.app.Activity;
 import android.app.ActivityManager;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.location.LocationListener;
@@ -21,14 +19,12 @@ import android.widget.Toast;
 import net.fortytwo.extendo.brain.ExtendoBrain;
 import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
-import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
 import net.fortytwo.extendo.events.EventLocationListener;
 import net.fortytwo.extendo.events.EventsActivity;
 import net.fortytwo.extendo.flashcards.android.Flashcards4Android;
 import net.fortytwo.extendo.ping.BrainPingSettings;
 
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
@@ -62,7 +58,6 @@ public class Main extends Activity implements TextToSpeech.OnInitListener {
 
         // Hook up button presses to the appropriate event handler.
         findViewById(R.id.back).setOnClickListener(backListener);
-        findViewById(R.id.tryme).setOnClickListener(trymeListener);
         findViewById(R.id.ping).setOnClickListener(pingListener);
         findViewById(R.id.flashcards).setOnClickListener(flashcardsListener);
         findViewById(R.id.events).setOnClickListener(eventsListener);
@@ -171,26 +166,6 @@ public class Main extends Activity implements TextToSpeech.OnInitListener {
     private OnClickListener backListener = new OnClickListener() {
         public void onClick(View v) {
             finish();
-        }
-    };
-
-    private final Context context = this;
-
-    private OnClickListener trymeListener = new OnClickListener() {
-
-        public void onClick(View v) {
-
-            texter.setText("simulating gesture event");
-            brainstem.simulateGestureEvent();
-
-            /*
-            editor.setText("");
-            editor.setText("sending a message\nto the Typeatron");
-            //brainstem.playEventNotificationTone();
-            brainstem.sendTestMessageToTypeatron(context);
-            //*/
-
-            //startActivity(new Intent(thisActivity, BrainPingPopup.class));
         }
     };
 

@@ -4,11 +4,12 @@ import android.util.Log;
 import com.illposed.osc.OSCMessage;
 import net.fortytwo.extendo.brain.ExtendoBrain;
 import net.fortytwo.extendo.brainstem.Brainstem;
-import net.fortytwo.extendo.brainstem.BrainstemAgent;
 import net.fortytwo.extendo.brainstem.EventStackProxy;
-import net.fortytwo.extendo.brainstem.bluetooth.BluetoothDeviceControl;
-import net.fortytwo.extendo.brainstem.osc.OSCDispatcher;
-import net.fortytwo.extendo.brainstem.osc.OSCMessageHandler;
+import net.fortytwo.extendo.p2p.ExtendoAgent;
+import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
+import net.fortytwo.extendo.p2p.osc.OSCMessageHandler;
+import net.fortytwo.extendo.p2p.osc.SlipOscControl;
+import net.fortytwo.extendo.rdf.Gesture;
 import net.fortytwo.rdfagents.model.Dataset;
 
 import java.util.Date;
@@ -19,26 +20,25 @@ import java.util.List;
  *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
-public class ExtendoHandControl extends BluetoothDeviceControl {
+public class ExtendoHandControl extends SlipOscControl {
 
-    public ExtendoHandControl(final String address,
-                              final OSCDispatcher oscDispatcher,
+    public ExtendoHandControl(final OSCDispatcher oscDispatcher,
                               final ExtendoBrain brain,
                               final EventStackProxy proxy,
-                              final BrainstemAgent agent,
+                              final ExtendoAgent agent,
                               final Brainstem brainstem) {
-        super(address, oscDispatcher);
+        super(oscDispatcher);
 
         oscDispatcher.register("/exo/hand/ping-reply", new OSCMessageHandler() {
             public void handle(final OSCMessage message) {
-                long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+                long delay = System.currentTimeMillis() - timeOfLastEvent;
                 brainstem.getToaster().makeText("bluetooth delay: " + delay + "ms");
             }
         });
 
         oscDispatcher.register("/exo/hand/raw", new OSCMessageHandler() {
             public void handle(final OSCMessage message) {
-                agent.timeOfLastEvent = System.currentTimeMillis();
+                timeOfLastEvent = System.currentTimeMillis();
 
                 // TODO: the recognition instant should be inferred from the timestamp supplied by the device
                 Date recognizedAt = new Date();
@@ -60,7 +60,7 @@ public class ExtendoHandControl extends BluetoothDeviceControl {
                         brain.getEventStack().createGestureEvent(agent.getAgentUri().stringValue(), recognizedAt));
                 }*/
 
-                Dataset d = agent.datasetForGenericBatonGesture(recognizedAt.getTime());
+                Dataset d = Gesture.datasetForGenericBatonGesture(recognizedAt.getTime(), agent.getAgentUri());
                 try {
                     agent.getQueryEngine().addStatements(d.getStatements());
                     //agent.broadcastDataset(d);
