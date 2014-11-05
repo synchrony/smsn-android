@@ -12,9 +12,10 @@ public class NotificationToneGenerator {
     // Note: is it possible to generate a tone with lower latency than this default generator's?
     //private final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
 
+    private static final float SYNTH_FREQUENCY = 880;
+
     private final AudioTrack audioTrack;
     private final int minSize;
-    private final float synth_frequency = 880;
     private final int sampleRate;
 
     public NotificationToneGenerator() {
@@ -43,7 +44,7 @@ public class NotificationToneGenerator {
         //    if (play) {
         for (int i = 0; i < buffer.length; i++) {
             float angular_frequency =
-                    (float) (2 * Math.PI) * synth_frequency / sampleRate;
+                    (float) (2 * Math.PI) * SYNTH_FREQUENCY / sampleRate;
             buffer[i] = (short) (Short.MAX_VALUE * ((float) Math.sin(angle)));
             angle += angular_frequency;
         }

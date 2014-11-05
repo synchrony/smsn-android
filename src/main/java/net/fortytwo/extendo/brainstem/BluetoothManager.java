@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.brainstem.bluetooth;
+package net.fortytwo.extendo.brainstem;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.util.Log;
-import net.fortytwo.extendo.brainstem.Brainstem;
 import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
 import net.fortytwo.extendo.p2p.osc.SlipOscControl;
 import net.fortytwo.extendo.util.SlipInputStream;

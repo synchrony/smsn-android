@@ -1,11 +1,8 @@
-package net.fortytwo.extendo.brainstem.devices;
+package net.fortytwo.extendo.brainstem;
 
-import android.util.Log;
 import com.illposed.osc.OSCMessage;
-import net.fortytwo.extendo.brain.ExtendoBrain;
-import net.fortytwo.extendo.brainstem.Brainstem;
-import net.fortytwo.extendo.brainstem.EventStackProxy;
 import net.fortytwo.extendo.p2p.ExtendoAgent;
+import net.fortytwo.extendo.p2p.SideEffects;
 import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
 import net.fortytwo.extendo.p2p.osc.OSCMessageHandler;
 import net.fortytwo.extendo.p2p.osc.SlipOscControl;
@@ -14,6 +11,8 @@ import net.fortytwo.rdfagents.model.Dataset;
 
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A controller for the Extend-o-Hand gestural glove
@@ -22,17 +21,17 @@ import java.util.List;
  */
 public class ExtendoHandControl extends SlipOscControl {
 
+    private static final Logger logger = Logger.getLogger(ExtendoHandControl.class.getName());
+
     public ExtendoHandControl(final OSCDispatcher oscDispatcher,
-                              final ExtendoBrain brain,
-                              final EventStackProxy proxy,
                               final ExtendoAgent agent,
-                              final Brainstem brainstem) {
+                              final SideEffects sideEffects) {
         super(oscDispatcher);
 
         oscDispatcher.register("/exo/hand/ping-reply", new OSCMessageHandler() {
             public void handle(final OSCMessage message) {
                 long delay = System.currentTimeMillis() - timeOfLastEvent;
-                brainstem.getToaster().makeText("bluetooth delay: " + delay + "ms");
+                sideEffects.setStatus("bluetooth delay: " + delay + "ms");
             }
         });
 
@@ -43,17 +42,18 @@ public class ExtendoHandControl extends SlipOscControl {
                 // TODO: the recognition instant should be inferred from the timestamp supplied by the device
                 Date recognizedAt = new Date();
 
-                if (Brainstem.VERBOSE) {
+                if (sideEffects.verbose()) {
                     List<Object> args = message.getArguments();
                     if (5 == args.size()) {
-                        brainstem.getTexter().setText("Extend-o-Hand raw gesture: "
+                        sideEffects.setStatus("Extend-o-Hand raw gesture: "
                                 + args.get(0) + " " + args.get(1) + " " + args.get(2)
                                 + " " + args.get(3) + " " + args.get(4));
                     } else {
-                        brainstem.getTexter().setText("Extend-o-Hand error (wrong # of args)");
+                        sideEffects.setStatus("Extend-o-Hand error (wrong # of args)");
                     }
                 }
 
+                // TODO: restore the event stack proxy, but using SLIP+OSC rather than HTTP
                 /*
                 if (null != proxy) {
                     proxy.push(
@@ -65,8 +65,7 @@ public class ExtendoHandControl extends SlipOscControl {
                     agent.getQueryEngine().addStatements(d.getStatements());
                     //agent.broadcastDataset(d);
                 } catch (Exception e) {
-                    Log.e(Brainstem.TAG, "failed to broadcast RDF dataset: " + e.getMessage());
-                    e.printStackTrace(System.err);
+                    logger.log(Level.SEVERE, "failed to broadcast RDF dataset", e);
                 }
             }
         });

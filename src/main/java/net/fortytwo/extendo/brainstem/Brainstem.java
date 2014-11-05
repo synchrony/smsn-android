@@ -2,22 +2,16 @@ package net.fortytwo.extendo.brainstem;
 
 import android.util.Log;
 import com.illposed.osc.OSCMessage;
-import com.tinkerpop.blueprints.KeyIndexableGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import edu.rpi.twc.sesamestream.BindingSetHandler;
 import edu.rpi.twc.sesamestream.QueryEngine;
 import net.fortytwo.extendo.Main;
-import net.fortytwo.extendo.brain.BrainGraph;
-import net.fortytwo.extendo.brain.ExtendoBrain;
-import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
-import net.fortytwo.extendo.brainstem.devices.ExtendoHandControl;
 import net.fortytwo.extendo.p2p.ExtendoAgent;
 import net.fortytwo.extendo.p2p.Pinger;
+import net.fortytwo.extendo.p2p.SideEffects;
 import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
 import net.fortytwo.extendo.p2p.osc.SlipOscControl;
 import net.fortytwo.extendo.rdf.Gesture;
 import net.fortytwo.extendo.typeatron.TypeatronControl;
-import net.fortytwo.extendo.typeatron.ripple.Environment;
 import net.fortytwo.extendo.util.TypedProperties;
 import org.openrdf.model.URI;
 import org.openrdf.query.BindingSet;
@@ -40,8 +34,6 @@ public class Brainstem {
 
     public static final String
             PROP_AGENTURI = "net.fortytwo.extendo.agentUri",
-            PROP_REXSTER_URL = "net.fortytwo.extendo.rexsterUrl",
-            PROP_REXSTER_GRAPH = "net.fortytwo.extendo.rexsterGraph",
             PROP_EXTENDOHAND_ADDRESS = "net.fortytwo.extendo.hand.address",
             PROP_TYPEATRON_ADDRESS = "net.fortytwo.extendo.typeatron.address";
 
@@ -60,7 +52,6 @@ public class Brainstem {
     private Properties configuration;
 
     private ExtendoAgent agent;
-    private final ExtendoBrain brain;
 
     private Main.Toaster toaster;
     private Main.Speaker speaker;
@@ -79,15 +70,6 @@ public class Brainstem {
         oscDispatcher = new OSCDispatcher();
         oscDispatcher.setVerbose(VERBOSE);
         bluetoothManager = BluetoothManager.getInstance(oscDispatcher);
-
-        // TODO: this TinkerGraph is a temporary solution
-        KeyIndexableGraph g = new TinkerGraph();
-        BrainGraph bg = new BrainGraph(g);
-        try {
-            brain = new ExtendoBrain(bg);
-        } catch (ExtendoBrain.ExtendoBrainException e) {
-            throw new BrainstemException(e);
-        }
 
         try {
             loadConfiguration();
@@ -171,17 +153,6 @@ public class Brainstem {
             throw new BrainstemException(e);
         }
         */
-
-        String rexsterUrl = configuration.getProperty(PROP_REXSTER_URL);
-        String rexsterGraph = configuration.getProperty(PROP_REXSTER_GRAPH);
-        if (null == rexsterUrl || null == rexsterGraph) {
-            throw new BrainstemException("Rexster endpoint info is missing from configuration: use "
-                    + PROP_REXSTER_URL + " and " + PROP_REXSTER_GRAPH);
-        }
-
-        String endpoint = rexsterUrl + "/graphs/" + rexsterGraph + "/extendo/";
-
-        EventStackProxy proxy = new EventStackProxy(endpoint + "push-event");
 
         // note: currently, setTextEditor() must be called before passing textEditor to the device controls
 
@@ -267,24 +238,24 @@ public class Brainstem {
             }
         }
 
+        SideEffects sideEffects = new BrainstemSideEffects(this);
+
         String extendoHandAddress = configuration.getProperty(PROP_EXTENDOHAND_ADDRESS);
         if (null != extendoHandAddress) {
-            Log.i(TAG, "loading Extend-o-Hand device at address " + extendoHandAddress);
-            ExtendoHandControl extendoHand = new ExtendoHandControl(oscDispatcher, brain, proxy, agent, this);
-            addBluetoothDevice(extendoHandAddress, extendoHand);
+            Log.i(TAG, "connecting to Extend-o-Hand at address " + extendoHandAddress);
+            addBluetoothDevice(
+                    extendoHandAddress, new ExtendoHandControl(oscDispatcher, agent, sideEffects));
         }
 
         String typeatronAddress = configuration.getProperty(PROP_TYPEATRON_ADDRESS);
         if (null != typeatronAddress) {
-            Log.i(TAG, "loading Typeatron device at address " + typeatronAddress);
-            TypeatronControl typeatron;
+            Log.i(TAG, "connecting to Typeatron at address " + typeatronAddress);
             try {
-                Environment env = new BrainstemEnvironment(this);
-                typeatron = new TypeatronControl(oscDispatcher, this.getAgent(), env);
+                addBluetoothDevice(
+                        typeatronAddress, new TypeatronControl(oscDispatcher, this.getAgent(), sideEffects));
             } catch (SlipOscControl.DeviceInitializationException e) {
                 throw new BrainstemException(e);
             }
-            addBluetoothDevice(typeatronAddress, typeatron);
         }
     }
 

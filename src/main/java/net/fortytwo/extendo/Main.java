@@ -18,7 +18,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 import net.fortytwo.extendo.brain.ExtendoBrain;
 import net.fortytwo.extendo.brainstem.Brainstem;
-import net.fortytwo.extendo.brainstem.bluetooth.BluetoothManager;
+import net.fortytwo.extendo.brainstem.BluetoothManager;
 import net.fortytwo.extendo.events.EventLocationListener;
 import net.fortytwo.extendo.events.EventsActivity;
 import net.fortytwo.extendo.flashcards.android.Flashcards4Android;
