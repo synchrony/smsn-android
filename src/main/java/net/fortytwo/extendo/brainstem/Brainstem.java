@@ -8,8 +8,8 @@ import net.fortytwo.extendo.Main;
 import net.fortytwo.extendo.p2p.ExtendoAgent;
 import net.fortytwo.extendo.p2p.Pinger;
 import net.fortytwo.extendo.p2p.SideEffects;
-import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
-import net.fortytwo.extendo.p2p.osc.SlipOscControl;
+import net.fortytwo.extendo.p2p.osc.OscControl;
+import net.fortytwo.extendo.p2p.osc.OscReceiver;
 import net.fortytwo.extendo.rdf.Gesture;
 import net.fortytwo.extendo.typeatron.TypeatronControl;
 import net.fortytwo.extendo.util.TypedProperties;
@@ -27,8 +27,6 @@ import java.util.Properties;
 public class Brainstem {
     public static final String TAG = "Brainstem";
 
-    public static final boolean VERBOSE = true;
-
     public static final String
             BLUETOOTH_NAME = "Extendo";
 
@@ -44,7 +42,7 @@ public class Brainstem {
 
     private Main.Texter texter;
 
-    private final OSCDispatcher oscDispatcher;
+    private final OscReceiver oscReceiver;
     private final BluetoothManager bluetoothManager;
 
     private final NotificationToneGenerator toneGenerator = new NotificationToneGenerator();
@@ -67,9 +65,8 @@ public class Brainstem {
     }
 
     private Brainstem() throws BrainstemException {
-        oscDispatcher = new OSCDispatcher();
-        oscDispatcher.setVerbose(VERBOSE);
-        bluetoothManager = BluetoothManager.getInstance(oscDispatcher);
+        oscReceiver = new OscReceiver();
+        bluetoothManager = BluetoothManager.getInstance(oscReceiver);
 
         try {
             loadConfiguration();
@@ -223,7 +220,7 @@ public class Brainstem {
                 agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_POINT_WITH_COMMON_INTEREST, twcDemoHandler2);
 
                 if (RELAY_OSC) {
-                    oscDispatcher.addListener(new OSCDispatcher.OSCMessageListener() {
+                    oscReceiver.addListener(new OscReceiver.OSCMessageListener() {
                         public void handle(final OSCMessage m) {
                             agent.sendOSCMessageToFacilitator(m);
                         }
@@ -244,7 +241,7 @@ public class Brainstem {
         if (null != extendoHandAddress) {
             Log.i(TAG, "connecting to Extend-o-Hand at address " + extendoHandAddress);
             addBluetoothDevice(
-                    extendoHandAddress, new ExtendoHandControl(oscDispatcher, agent, sideEffects));
+                    extendoHandAddress, new ExtendoHandControl(oscReceiver, agent, sideEffects));
         }
 
         String typeatronAddress = configuration.getProperty(PROP_TYPEATRON_ADDRESS);
@@ -252,15 +249,15 @@ public class Brainstem {
             Log.i(TAG, "connecting to Typeatron at address " + typeatronAddress);
             try {
                 addBluetoothDevice(
-                        typeatronAddress, new TypeatronControl(oscDispatcher, this.getAgent(), sideEffects));
-            } catch (SlipOscControl.DeviceInitializationException e) {
+                        typeatronAddress, new TypeatronControl(oscReceiver, this.getAgent(), sideEffects));
+            } catch (OscControl.DeviceInitializationException e) {
                 throw new BrainstemException(e);
             }
         }
     }
 
     private void addBluetoothDevice(final String bluetoothAddress,
-                                    final SlipOscControl dc) {
+                                    final OscControl dc) {
         bluetoothManager.register(bluetoothAddress, dc);
     }
 

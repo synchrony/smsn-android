@@ -3,9 +3,9 @@ package net.fortytwo.extendo.brainstem;
 import com.illposed.osc.OSCMessage;
 import net.fortytwo.extendo.p2p.ExtendoAgent;
 import net.fortytwo.extendo.p2p.SideEffects;
-import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
-import net.fortytwo.extendo.p2p.osc.OSCMessageHandler;
-import net.fortytwo.extendo.p2p.osc.SlipOscControl;
+import net.fortytwo.extendo.p2p.osc.OscControl;
+import net.fortytwo.extendo.p2p.osc.OscMessageHandler;
+import net.fortytwo.extendo.p2p.osc.OscReceiver;
 import net.fortytwo.extendo.rdf.Gesture;
 import net.fortytwo.rdfagents.model.Dataset;
 
@@ -19,23 +19,23 @@ import java.util.logging.Logger;
  *
  * @author Joshua Shinavier (http://fortytwo.net)
  */
-public class ExtendoHandControl extends SlipOscControl {
+public class ExtendoHandControl extends OscControl {
 
     private static final Logger logger = Logger.getLogger(ExtendoHandControl.class.getName());
 
-    public ExtendoHandControl(final OSCDispatcher oscDispatcher,
+    public ExtendoHandControl(final OscReceiver oscDispatcher,
                               final ExtendoAgent agent,
                               final SideEffects sideEffects) {
         super(oscDispatcher);
 
-        oscDispatcher.register("/exo/hand/ping-reply", new OSCMessageHandler() {
+        oscDispatcher.register("/exo/hand/ping-reply", new OscMessageHandler() {
             public void handle(final OSCMessage message) {
                 long delay = System.currentTimeMillis() - timeOfLastEvent;
                 sideEffects.setStatus("bluetooth delay: " + delay + "ms");
             }
         });
 
-        oscDispatcher.register("/exo/hand/raw", new OSCMessageHandler() {
+        oscDispatcher.register("/exo/hand/raw", new OscMessageHandler() {
             public void handle(final OSCMessage message) {
                 timeOfLastEvent = System.currentTimeMillis();
 

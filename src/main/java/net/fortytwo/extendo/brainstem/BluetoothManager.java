@@ -7,8 +7,10 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.util.Log;
-import net.fortytwo.extendo.p2p.osc.OSCDispatcher;
-import net.fortytwo.extendo.p2p.osc.SlipOscControl;
+import net.fortytwo.extendo.p2p.osc.OscControl;
+import net.fortytwo.extendo.p2p.osc.OscReceiver;
+import net.fortytwo.extendo.p2p.osc.OscSender;
+import net.fortytwo.extendo.p2p.osc.SlipOscSender;
 import net.fortytwo.extendo.util.SlipInputStream;
 
 import java.io.IOException;
@@ -40,30 +42,30 @@ public class BluetoothManager {
 
     private BluetoothAdapter adapter;
 
-    private final Map<String, SlipOscControl> registeredDeviceControlsByAddress;
+    private final Map<String, OscControl> registeredDeviceControlsByAddress;
     private final Map<String, BluetoothDevice> managedDevicesByAddress;
     private final Set<String> connectedDeviceAddresses;
 
-    private OSCDispatcher dispatcher;
+    private OscReceiver dispatcher;
 
     private ServerThread serverThread;
     //private ClientThread clientThread;
 
     private static final BluetoothManager INSTANCE = new BluetoothManager();
 
-    public static BluetoothManager getInstance(final OSCDispatcher dispatcher) {
+    public static BluetoothManager getInstance(final OscReceiver dispatcher) {
         INSTANCE.dispatcher = dispatcher;
         return INSTANCE;
     }
 
     private BluetoothManager() {
-        registeredDeviceControlsByAddress = new HashMap<String, SlipOscControl>();
+        registeredDeviceControlsByAddress = new HashMap<String, OscControl>();
         managedDevicesByAddress = new HashMap<String, BluetoothDevice>();
         connectedDeviceAddresses = new HashSet<String>();
     }
 
     public void register(final String bluetoothAddress,
-                         final SlipOscControl device) {
+                         final OscControl device) {
         registeredDeviceControlsByAddress.put(bluetoothAddress, device);
     }
 
@@ -243,8 +245,8 @@ public class BluetoothManager {
                                 // so fire the device's connection event(s)
                                 // TODO: do we really need to wait until we have incoming data,
                                 // or do we know earlier that we have a SLIP connection?
-                                registeredDeviceControlsByAddress.get(device.getAddress()).connect(
-                                        outputStream);
+                                SlipOscSender sender = new SlipOscSender(outputStream);
+                                registeredDeviceControlsByAddress.get(device.getAddress()).connect(sender);
                             }
 
                             isConnected = true;
