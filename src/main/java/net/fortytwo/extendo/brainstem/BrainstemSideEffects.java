@@ -21,9 +21,4 @@ public class BrainstemSideEffects implements SideEffects {
     public void setStatus(String message) {
         brainstem.getTexter().setText(message);
     }
-
-    @Override
-    public boolean verbose() {
-        return Brainstem.RELAY_OSC;
-    }
 }

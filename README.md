@@ -1,6 +1,6 @@
 Welcome to extendo-android, aka the Brainstem.
 
-This is a no-frills Android app for connecting [Extendo](http://github.com/joshsh/extendo) Bluetooth devices (Typeatron, Extend-o-Hand) with an Extend-o-Brain knowledge base and event handlers.  If you have a Typeatron burning a hole in your pocket, you're in the right place.
+This is a no-frills Android app for connecting [Extendo](http://github.com/joshsh/extendo) Bluetooth devices (Typeatron, Extend-o-Hand) with an Extend-o-Brain knowledge base and event handlers.  If you have a Typeatron in your pocket, or you are planning to, you're in the right place.
 Extendo-Android also contains a graphical [Flashcards](https://github.com/joshsh/flashcards) interface which will probably become a separate app in future.
 
 To download Extendo Android 1.1-SNAPSHOT, click or scan:

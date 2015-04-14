@@ -1,58 +1,64 @@
 package net.fortytwo.extendo.brainstem;
 
 import android.util.Log;
-import com.illposed.osc.OSCMessage;
 import edu.rpi.twc.sesamestream.BindingSetHandler;
 import edu.rpi.twc.sesamestream.QueryEngine;
+import net.fortytwo.extendo.Extendo;
 import net.fortytwo.extendo.Main;
+import net.fortytwo.extendo.hand.ExtendoHandControl;
 import net.fortytwo.extendo.p2p.ExtendoAgent;
 import net.fortytwo.extendo.p2p.Pinger;
 import net.fortytwo.extendo.p2p.SideEffects;
 import net.fortytwo.extendo.p2p.osc.OscControl;
 import net.fortytwo.extendo.p2p.osc.OscReceiver;
-import net.fortytwo.extendo.rdf.Gesture;
+import net.fortytwo.extendo.rdf.Activities;
 import net.fortytwo.extendo.typeatron.TypeatronControl;
 import net.fortytwo.extendo.util.TypedProperties;
 import org.openrdf.model.URI;
 import org.openrdf.query.BindingSet;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Properties;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class Brainstem {
+    // no query expiration for now
+    private static final int QUERY_TTL = 0;
+
+    /**
+     * Tag for all Brainstem-specific log messages
+     */
     public static final String TAG = "Brainstem";
 
+    /**
+     * The Brainstem's SDP service name for Bluetooth communication
+     */
     public static final String
             BLUETOOTH_NAME = "Extendo";
 
     public static final String
-            PROP_AGENTURI = "net.fortytwo.extendo.agentUri",
-            PROP_EXTENDOHAND_ADDRESS = "net.fortytwo.extendo.hand.address",
-            PROP_TYPEATRON_ADDRESS = "net.fortytwo.extendo.typeatron.address";
+            PROP_EXTENDOHAND_ADDRESS = "net.fortytwo.extendo.brainstem.handAddress",
+            PROP_TYPEATRON_ADDRESS = "net.fortytwo.extendo.brainstem.typeatronAddress";
 
-    // TODO: make this configurable
-    public static final boolean RELAY_OSC = true;
-
-    private static final String PROPS_PATH = "/sdcard/brainstem.props";
-
-    private Main.Texter texter;
-
-    private final OscReceiver oscReceiver;
-    private final BluetoothManager bluetoothManager;
-
-    private final NotificationToneGenerator toneGenerator = new NotificationToneGenerator();
-
-    private Properties configuration;
+    /**
+     * The expected location of Brainstem's configuration file
+     * This file is currently separate from the main Extendo configuration, ./extendo.properties.
+     * On Android, the latter may be an inaccessible location (in the file system root)
+     */
+    public static final String PROPS_PATH = "/sdcard/extendo.properties";
 
     private ExtendoAgent agent;
 
-    private Main.Toaster toaster;
+    private final BluetoothManager bluetoothManager;
+    // receives OSC messages from the Bluetooth devices (as opposed to the WiFi interface)
+    private final OscReceiver bluetoothOscReceiver;
+
+    private final NotificationToneGenerator toneGenerator = new NotificationToneGenerator();
     private Main.Speaker speaker;
+    private Main.Texter texter;
+    private Main.Toaster toaster;
 
     private static final Brainstem INSTANCE;
 
@@ -65,12 +71,16 @@ public class Brainstem {
     }
 
     private Brainstem() throws BrainstemException {
-        oscReceiver = new OscReceiver();
-        bluetoothManager = BluetoothManager.getInstance(oscReceiver);
+        bluetoothOscReceiver = new OscReceiver();
+        bluetoothManager = BluetoothManager.getInstance(bluetoothOscReceiver);
 
         try {
             loadConfiguration();
         } catch (TypedProperties.PropertyException e) {
+            throw new BrainstemException(e);
+        } catch (IOException e) {
+            throw new BrainstemException(e);
+        } catch (OscControl.DeviceInitializationException e) {
             throw new BrainstemException(e);
         }
     }
@@ -116,123 +126,83 @@ public class Brainstem {
     // settings which change more frequently than the APK is loaded, such as network settings.
     // Ideally, this file will go away entirely once the Brainstem becomes reusable software rather than a
     // special-purpose component of a demo.
-    private void loadConfiguration() throws BrainstemException, TypedProperties.PropertyException {
-        // this configuration is currently separate from the main Extendo configuration, which reads from
-        // ./extendo.properties.  On Android, this path may be an inaccessible location (in the file system root)
-        if (null == configuration) {
-            File f = new File(PROPS_PATH);
-            if (!f.exists()) {
-                throw new BrainstemException("configuration properties not found: " + PROPS_PATH);
-            }
+    private void loadConfiguration()
+            throws BrainstemException, TypedProperties.PropertyException,
+            IOException, OscControl.DeviceInitializationException {
 
-            configuration = new TypedProperties();
-            try {
-                configuration.load(new FileInputStream(f));
-            } catch (IOException e) {
-                throw new BrainstemException(e);
-            }
-        }
-
-        // temporary code to investigate merging brainstem.props with extendo.properties
-        /*
-        Log.i(TAG, "creating extendo.properties");
-        try {
-            File f = new File("extendo.properties");
-            Log.i(TAG, "f.getAbsolutePath(): " + f.getAbsolutePath());
-            Log.i(TAG, "f.exists(): " + f.exists());
-            if (!f.exists()) {
-                f.createNewFile();
-                OutputStream fout = new FileOutputStream(f);
-                fout.write("foo".getBytes());
-                fout.close();
-            }
-        } catch (IOException e) {
-            throw new BrainstemException(e);
-        }
-        */
+        Extendo.addConfiguration(new File(PROPS_PATH));
+        TypedProperties configuration = Extendo.getConfiguration();
 
         // note: currently, setTextEditor() must be called before passing textEditor to the device controls
 
-        String u = configuration.getProperty(PROP_AGENTURI);
-        if (null == u) {
-            throw new BrainstemException("who are you? Missing value for " + PROP_AGENTURI);
-        } else {
-            try {
-                agent = new ExtendoAgent(u, true);
-                Log.i(TAG, "created BrainstemAgent with URI " + u);
+        try {
+            agent = new ExtendoAgent(true);
 
-                final BindingSetHandler gbGestureAnswerHandler = new BindingSetHandler() {
-                    public void handle(final BindingSet bindings) {
-                        //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+            final BindingSetHandler gbGestureAnswerHandler = new BindingSetHandler() {
+                public void handle(final BindingSet bindings) {
+                    //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
 
-                        toneGenerator.play();
+                    toneGenerator.play();
 
-                        //toaster.makeText("latency (before tone) = " + delay + "ms");
+                    //toaster.makeText("latency (before tone) = " + delay + "ms");
 
-                        Log.i(Brainstem.TAG, "received SPARQL query result: " + bindings);
-                    }
-                };
-                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_ALL_GB_GESTURES, gbGestureAnswerHandler);
-
-                final BindingSetHandler twcDemoHandler0 = new BindingSetHandler() {
-                    public void handle(final BindingSet bindings) {
-                        Log.i(Brainstem.TAG, "person " + bindings.getValue("pointedTo")
-                                + " pointed to: " + bindings.getValue("pointedTo"));
-                    }
-                };
-                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_THING_POINTED_TO, twcDemoHandler0);
-
-                final BindingSetHandler twcDemoHandler1 = new BindingSetHandler() {
-                    public void handle(final BindingSet bindings) {
-                        //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
-
-                        toneGenerator.play();
-
-                        String speech = bindings.getValue("personPointedToName").stringValue()
-                                + ", you're both members of "
-                                + bindings.getValue("orgLabel").stringValue();
-                        speaker.speak(speech);
-
-                        //toaster.makeText("latency (before tone) = " + delay + "ms");
-
-                        Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with org: "
-                                + bindings.getValue("orgLabel"));
-                    }
-                };
-                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_POINT_WITH_COMMON_ORG, twcDemoHandler1);
-
-                final BindingSetHandler twcDemoHandler2 = new BindingSetHandler() {
-                    public void handle(final BindingSet bindings) {
-                        //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
-
-                        toneGenerator.play();
-
-                        String speech = bindings.getValue("personPointedToName").stringValue() + ", you both like "
-                                + ((URI) bindings.getValue("interest")).getLocalName().replaceAll("_", " ");
-                        speaker.speak(speech);
-
-                        //toaster.makeText("latency (before tone) = " + delay + "ms");
-
-                        Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with interest: "
-                                + bindings.getValue("interest"));
-                    }
-                };
-                agent.getQueryEngine().addQuery(Gesture.QUERY_FOR_POINT_WITH_COMMON_INTEREST, twcDemoHandler2);
-
-                if (RELAY_OSC) {
-                    oscReceiver.addListener(new OscReceiver.OSCMessageListener() {
-                        public void handle(final OSCMessage m) {
-                            agent.sendOSCMessageToFacilitator(m);
-                        }
-                    });
+                    Log.i(Brainstem.TAG, "received SPARQL query result: " + bindings);
                 }
-            } catch (QueryEngine.InvalidQueryException e) {
-                throw new BrainstemException(e);
-            } catch (IOException e) {
-                throw new BrainstemException(e);
-            } catch (QueryEngine.IncompatibleQueryException e) {
-                throw new BrainstemException(e);
-            }
+            };
+            agent.getQueryEngine().addQuery(QUERY_TTL, Activities.QUERY_FOR_ALL_GB_GESTURES, gbGestureAnswerHandler);
+
+            final BindingSetHandler twcDemoHandler0 = new BindingSetHandler() {
+                public void handle(final BindingSet bindings) {
+                    Log.i(Brainstem.TAG, "person " + bindings.getValue("pointedTo")
+                            + " pointed to: " + bindings.getValue("pointedTo"));
+                }
+            };
+            agent.getQueryEngine().addQuery(QUERY_TTL, Activities.QUERY_FOR_THINGS_POINTED_TO, twcDemoHandler0);
+
+            final BindingSetHandler twcDemoHandler1 = new BindingSetHandler() {
+                public void handle(final BindingSet bindings) {
+                    //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+
+                    toneGenerator.play();
+
+                    String speech = bindings.getValue("personPointedToName").stringValue()
+                            + ", you're both members of "
+                            + bindings.getValue("orgLabel").stringValue();
+                    speaker.speak(speech);
+
+                    //toaster.makeText("latency (before tone) = " + delay + "ms");
+
+                    Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with org: "
+                            + bindings.getValue("orgLabel"));
+                }
+            };
+            agent.getQueryEngine().addQuery(
+                    QUERY_TTL, Activities.QUERY_FOR_THINGS_POINTED_TO_WITH_COMMON_ORG, twcDemoHandler1);
+
+            final BindingSetHandler twcDemoHandler2 = new BindingSetHandler() {
+                public void handle(final BindingSet bindings) {
+                    //long delay = System.currentTimeMillis() - agent.timeOfLastEvent;
+
+                    toneGenerator.play();
+
+                    String speech = bindings.getValue("personPointedToName").stringValue() + ", you both like "
+                            + ((URI) bindings.getValue("interest")).getLocalName().replaceAll("_", " ");
+                    speaker.speak(speech);
+
+                    //toaster.makeText("latency (before tone) = " + delay + "ms");
+
+                    Log.i(Brainstem.TAG, "pointed to: " + bindings.getValue("personPointedTo") + " with interest: "
+                            + bindings.getValue("interest"));
+                }
+            };
+            agent.getQueryEngine().addQuery(
+                    QUERY_TTL, Activities.QUERY_FOR_THINGS_POINTED_TO_WITH_COMMON_INTEREST, twcDemoHandler2);
+        } catch (QueryEngine.InvalidQueryException e) {
+            throw new BrainstemException(e);
+        } catch (IOException e) {
+            throw new BrainstemException(e);
+        } catch (QueryEngine.IncompatibleQueryException e) {
+            throw new BrainstemException(e);
         }
 
         SideEffects sideEffects = new BrainstemSideEffects(this);
@@ -241,7 +211,7 @@ public class Brainstem {
         if (null != extendoHandAddress) {
             Log.i(TAG, "connecting to Extend-o-Hand at address " + extendoHandAddress);
             addBluetoothDevice(
-                    extendoHandAddress, new ExtendoHandControl(oscReceiver, agent, sideEffects));
+                    extendoHandAddress, new ExtendoHandControl(bluetoothOscReceiver, agent));
         }
 
         String typeatronAddress = configuration.getProperty(PROP_TYPEATRON_ADDRESS);
@@ -249,7 +219,7 @@ public class Brainstem {
             Log.i(TAG, "connecting to Typeatron at address " + typeatronAddress);
             try {
                 addBluetoothDevice(
-                        typeatronAddress, new TypeatronControl(oscReceiver, this.getAgent(), sideEffects));
+                        typeatronAddress, new TypeatronControl(bluetoothOscReceiver, this.getAgent(), sideEffects));
             } catch (OscControl.DeviceInitializationException e) {
                 throw new BrainstemException(e);
             }

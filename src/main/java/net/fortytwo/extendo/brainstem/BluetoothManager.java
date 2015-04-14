@@ -9,9 +9,8 @@ import android.content.Intent;
 import android.util.Log;
 import net.fortytwo.extendo.p2p.osc.OscControl;
 import net.fortytwo.extendo.p2p.osc.OscReceiver;
-import net.fortytwo.extendo.p2p.osc.OscSender;
 import net.fortytwo.extendo.p2p.osc.SlipOscSender;
-import net.fortytwo.extendo.util.SlipInputStream;
+import net.fortytwo.extendo.util.slip.SlipInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -245,7 +244,7 @@ public class BluetoothManager {
                                 // so fire the device's connection event(s)
                                 // TODO: do we really need to wait until we have incoming data,
                                 // or do we know earlier that we have a SLIP connection?
-                                SlipOscSender sender = new SlipOscSender(outputStream);
+                                SlipOscSender sender = new SlipOscSender(outputStream, false);
                                 registeredDeviceControlsByAddress.get(device.getAddress()).connect(sender);
                             }
 
