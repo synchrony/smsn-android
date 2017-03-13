@@ -4,19 +4,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>extendo-android</artifactId>
+    <artifactId>smsn-android</artifactId>
     <packaging>apk</packaging>
-    <name>Extendo for Android</name>
-    <description>a.k.a. Extendo Brainstem</description>
+    <name>SmSn for Android</name>
+    <description>a.k.a. SmSn Brainstem</description>
 
     <parent>
-        <groupId>net.fortytwo.extendo</groupId>
-        <artifactId>extendo-all</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <groupId>net.fortytwo.smsn</groupId>
+        <artifactId>smsn-all</artifactId>
+        <version>1.3-SNAPSHOT</version>
     </parent>
 
     <properties>
-        <!--<extendo.version>1.1-SNAPSHOT</extendo.version>-->
+        <!--<smsn.version>1.1-SNAPSHOT</smsn.version>-->
         <!--<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>-->
     </properties>
@@ -36,9 +36,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>net.fortytwo.extendo</groupId>
+            <groupId>net.fortytwo.smsn</groupId>
             <artifactId>typeatron</artifactId>
-            <version>${extendo.version}</version>
+            <version>${smsn.version}</version>
             <exclusions>
                 <!-- exclude Neo4j, with its non-Androidy dependencies. We will include neo4j-android when we need it -->
                 <exclusion>
@@ -61,7 +61,7 @@
                     <groupId>commons-beanutils</groupId>
                     <artifactId>commons-beanutils</artifactId>
                 </exclusion>
-                <!-- conflict with extendo-p2p -->
+                <!-- conflict with smsn-p2p -->
                 <exclusion>
                     <groupId>commons-codec</groupId>
                     <artifactId>commons-codec</artifactId>
@@ -80,14 +80,14 @@
         </dependency>
         <!-- note: no exclusions here (see the Typeatron dependency) -->
         <dependency>
-            <groupId>net.fortytwo.extendo</groupId>
-            <artifactId>extendo-hand</artifactId>
-            <version>${extendo.version}</version>
+            <groupId>net.fortytwo.smsn</groupId>
+            <artifactId>hand</artifactId>
+            <version>${smsn.version}</version>
         </dependency>
         <dependency>
-            <groupId>net.fortytwo.extendo</groupId>
+            <groupId>net.fortytwo.smsn</groupId>
             <artifactId>flashcards</artifactId>
-            <version>${extendo.version}</version>
+            <version>${smsn.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>

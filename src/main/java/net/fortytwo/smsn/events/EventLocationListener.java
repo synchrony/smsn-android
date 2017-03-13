@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.events;
+package net.fortytwo.smsn.events;
 
 import android.location.Location;
 import android.location.LocationListener;

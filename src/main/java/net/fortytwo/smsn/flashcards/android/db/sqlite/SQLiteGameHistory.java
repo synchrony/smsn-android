@@ -1,13 +1,13 @@
-package net.fortytwo.extendo.flashcards.android.db.sqlite;
+package net.fortytwo.smsn.flashcards.android.db.sqlite;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import net.fortytwo.extendo.flashcards.Card;
-import net.fortytwo.extendo.flashcards.Deck;
-import net.fortytwo.extendo.flashcards.Trial;
-import net.fortytwo.extendo.flashcards.db.CloseableIterator;
-import net.fortytwo.extendo.flashcards.db.GameHistory;
+import net.fortytwo.smsn.flashcards.Card;
+import net.fortytwo.smsn.flashcards.Deck;
+import net.fortytwo.smsn.flashcards.Trial;
+import net.fortytwo.smsn.flashcards.db.CloseableIterator;
+import net.fortytwo.smsn.flashcards.db.GameHistory;
 
 import java.io.IOException;
 

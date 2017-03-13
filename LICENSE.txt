@@ -1,4 +1,4 @@
-Extendo Android copyright (C) 2011-2015 Joshua Shinavier
+SmSn Android copyright (C) 2011-2017 Joshua Shinavier
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

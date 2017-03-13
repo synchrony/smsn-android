@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.ping;
+package net.fortytwo.smsn.ping;
 
 import android.app.IntentService;
 import android.app.Notification;
@@ -11,7 +11,7 @@ import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
-import net.fortytwo.extendo.R;
+import net.fortytwo.smsn.R;
 
 import java.util.Collection;
 import java.util.LinkedList;

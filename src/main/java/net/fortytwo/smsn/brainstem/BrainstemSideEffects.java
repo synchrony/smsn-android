@@ -1,6 +1,6 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.smsn.brainstem;
 
-import net.fortytwo.extendo.p2p.SideEffects;
+import net.fortytwo.smsn.p2p.SideEffects;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

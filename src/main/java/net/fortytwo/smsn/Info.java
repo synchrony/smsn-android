@@ -1,4 +1,4 @@
-package net.fortytwo.extendo;
+package net.fortytwo.smsn;
 
 import android.app.Activity;
 import android.content.SharedPreferences;

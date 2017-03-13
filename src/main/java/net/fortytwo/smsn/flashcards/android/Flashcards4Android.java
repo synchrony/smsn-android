@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.flashcards.android;
+package net.fortytwo.smsn.flashcards.android;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -12,28 +12,28 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.RelativeLayout;
-import net.fortytwo.extendo.R;
-import net.fortytwo.extendo.flashcards.Card;
-import net.fortytwo.extendo.flashcards.Deck;
-import net.fortytwo.extendo.flashcards.GameplayException;
-import net.fortytwo.extendo.flashcards.PriorityPile;
-import net.fortytwo.extendo.flashcards.Trial;
-import net.fortytwo.extendo.flashcards.android.db.sqlite.SQLiteFlashcardsHelper;
-import net.fortytwo.extendo.flashcards.android.db.sqlite.SQLiteGameHistory;
-import net.fortytwo.extendo.flashcards.db.CardStore;
-import net.fortytwo.extendo.flashcards.db.CloseableIterator;
-import net.fortytwo.extendo.flashcards.db.GameHistory;
-import net.fortytwo.extendo.flashcards.db.file.FileBasedGameHistory;
-import net.fortytwo.extendo.flashcards.db.memory.MemoryCardStore;
-import net.fortytwo.extendo.flashcards.decks.SimpleDeck;
-import net.fortytwo.extendo.flashcards.decks.geo.InternationalBorders;
-import net.fortytwo.extendo.flashcards.decks.geo.NationalCapitals;
-import net.fortytwo.extendo.flashcards.decks.tech.HttpStatusCodes;
-import net.fortytwo.extendo.flashcards.decks.vocab.FrenchVocabulary;
-import net.fortytwo.extendo.flashcards.decks.vocab.HSK4ChineseCharacters;
-import net.fortytwo.extendo.flashcards.decks.vocab.HSK4ChineseCompounds;
-import net.fortytwo.extendo.flashcards.decks.vocab.VocabularyDeck;
-import net.fortytwo.extendo.flashcards.games.AsynchronousGame;
+import net.fortytwo.smsn.R;
+import net.fortytwo.smsn.flashcards.Card;
+import net.fortytwo.smsn.flashcards.Deck;
+import net.fortytwo.smsn.flashcards.GameplayException;
+import net.fortytwo.smsn.flashcards.PriorityPile;
+import net.fortytwo.smsn.flashcards.Trial;
+import net.fortytwo.smsn.flashcards.android.db.sqlite.SQLiteFlashcardsHelper;
+import net.fortytwo.smsn.flashcards.android.db.sqlite.SQLiteGameHistory;
+import net.fortytwo.smsn.flashcards.db.CardStore;
+import net.fortytwo.smsn.flashcards.db.CloseableIterator;
+import net.fortytwo.smsn.flashcards.db.GameHistory;
+import net.fortytwo.smsn.flashcards.db.file.FileBasedGameHistory;
+import net.fortytwo.smsn.flashcards.db.memory.MemoryCardStore;
+import net.fortytwo.smsn.flashcards.decks.SimpleDeck;
+import net.fortytwo.smsn.flashcards.decks.geo.InternationalBorders;
+import net.fortytwo.smsn.flashcards.decks.geo.NationalCapitals;
+import net.fortytwo.smsn.flashcards.decks.tech.HttpStatusCodes;
+import net.fortytwo.smsn.flashcards.decks.vocab.FrenchVocabulary;
+import net.fortytwo.smsn.flashcards.decks.vocab.HSK4ChineseCharacters;
+import net.fortytwo.smsn.flashcards.decks.vocab.HSK4ChineseCompounds;
+import net.fortytwo.smsn.flashcards.decks.vocab.VocabularyDeck;
+import net.fortytwo.smsn.flashcards.games.AsynchronousGame;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +42,7 @@ import java.io.IOException;
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class Flashcards4Android extends Activity {
-    public static final String INFO = "net.fortytwo.extendo.flashcards.android.info";
+    public static final String INFO = "net.fortytwo.smsn.flashcards.android.info";
 
     public static final String HTML_PREFIX = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
             "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n" +

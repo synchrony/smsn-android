@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.smsn.brainstem;
 
 import android.util.Log;
 

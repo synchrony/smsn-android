@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.ping;
+package net.fortytwo.smsn.ping;
 
 import android.content.Context;
 

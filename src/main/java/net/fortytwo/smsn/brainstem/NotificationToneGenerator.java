@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.smsn.brainstem;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;

@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.events;
+package net.fortytwo.smsn.events;
 
 import java.util.LinkedList;
 import java.util.List;

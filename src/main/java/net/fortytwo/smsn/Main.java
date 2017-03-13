@@ -1,4 +1,4 @@
-package net.fortytwo.extendo;
+package net.fortytwo.smsn;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -16,13 +16,13 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
-import net.fortytwo.extendo.brain.ExtendoBrain;
-import net.fortytwo.extendo.brainstem.Brainstem;
-import net.fortytwo.extendo.brainstem.BluetoothManager;
-import net.fortytwo.extendo.events.EventLocationListener;
-import net.fortytwo.extendo.events.EventsActivity;
-import net.fortytwo.extendo.flashcards.android.Flashcards4Android;
-import net.fortytwo.extendo.ping.BrainPingSettings;
+import net.fortytwo.smsn.brain.Brain;
+import net.fortytwo.smsn.brainstem.Brainstem;
+import net.fortytwo.smsn.brainstem.BluetoothManager;
+import net.fortytwo.smsn.events.EventLocationListener;
+import net.fortytwo.smsn.events.EventsActivity;
+import net.fortytwo.smsn.flashcards.android.Flashcards4Android;
+import net.fortytwo.smsn.ping.BrainPingSettings;
 
 import java.util.Locale;
 
@@ -39,7 +39,7 @@ public class Main extends Activity implements TextToSpeech.OnInitListener {
     private final Toaster toaster;
     private Speaker speaker;
 
-    public Main() throws ExtendoBrain.ExtendoBrainException {
+    public Main() throws Brain.BrainException {
         toaster = new Toaster();
         brainstem = Brainstem.getInstance();
     }

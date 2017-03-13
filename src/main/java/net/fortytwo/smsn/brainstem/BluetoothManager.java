@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.smsn.brainstem;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -7,10 +7,10 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.util.Log;
-import net.fortytwo.extendo.p2p.osc.OscControl;
-import net.fortytwo.extendo.p2p.osc.OscReceiver;
-import net.fortytwo.extendo.p2p.osc.SlipOscSender;
-import net.fortytwo.extendo.util.slip.SlipInputStream;
+import net.fortytwo.smsn.p2p.osc.OscControl;
+import net.fortytwo.smsn.p2p.osc.OscReceiver;
+import net.fortytwo.smsn.p2p.osc.SlipOscSender;
+import net.fortytwo.smsn.util.slip.SlipInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -106,10 +106,10 @@ public class BluetoothManager {
 
         if (pairedDevices.size() > 0) {
             int count = 0;
-            StringBuilder sb = new StringBuilder("bonded Extendo devices:\n");
+            StringBuilder sb = new StringBuilder("bonded SmSn devices:\n");
 
             for (BluetoothDevice d : pairedDevices) {
-                if (isBondedExtendoDevice(d)) {
+                if (isBondedSmSnDevice(d)) {
                     count++;
                     sb.append("\t").append(d.getAddress())
                             .append(": ").append(d.getName())
@@ -123,10 +123,10 @@ public class BluetoothManager {
             if (count > 0) {
                 Log.i(Brainstem.TAG, sb.toString());
             } else {
-                Log.w(Brainstem.TAG, "no bonded Extendo devices");
+                Log.w(Brainstem.TAG, "no bonded SmSn devices");
             }
         } else {
-            Log.i(Brainstem.TAG, "no paired Extendo devices");
+            Log.i(Brainstem.TAG, "no paired SmSn devices");
         }
 
         //serverThread = new ServerThread();
@@ -154,7 +154,7 @@ public class BluetoothManager {
         }
     }
 
-    private boolean isBondedExtendoDevice(final BluetoothDevice device) {
+    private boolean isBondedSmSnDevice(final BluetoothDevice device) {
         return null != registeredDeviceControlsByAddress.get(device.getAddress())
                 && BluetoothDevice.BOND_BONDED == device.getBondState();
     }
@@ -172,7 +172,7 @@ public class BluetoothManager {
             Log.e(Brainstem.TAG, "Bluetooth socket for " + socket.getRemoteDevice().getName()
                     + " has null input or output stream");
         } else {
-            Log.i(Brainstem.TAG, "attempting connection to Extendo device " + socket.getRemoteDevice().getName());
+            Log.i(Brainstem.TAG, "attempting connection to SmSn device " + socket.getRemoteDevice().getName());
             socket.connect();
 
             new BluetoothOSCThread(socket).start();
@@ -296,7 +296,7 @@ public class BluetoothManager {
                     }
                     // If a connection was accepted
                     if (socket != null) {
-                        if (isBondedExtendoDevice(socket.getRemoteDevice())) {
+                        if (isBondedSmSnDevice(socket.getRemoteDevice())) {
                             // Do work to manage the connection (in a separate thread)
                             connectToSocket(socket);
 

@@ -1,4 +1,4 @@
-package net.fortytwo.extendo.ping;
+package net.fortytwo.smsn.ping;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -8,7 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
-import net.fortytwo.extendo.R;
+import net.fortytwo.smsn.R;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

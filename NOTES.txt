@@ -1,17 +1,17 @@
 ################################################################################
-# Welcome to extendo-android, aka the Brainstem
+# Welcome to smsn-android, aka the Brainstem
 #
-# This is an Android app for connecting Extendo devices (Typeatron,
+# This is an Android app for connecting SmSn devices (Typeatron,
 # Extend-o-Hand) with an Extend-o-Brain knowledge base and event handlers.
 #
-# For more details on the Extendo project, see:
-#     https://github.com/joshsh/extendo     
+# For more details on the Semantic Synchrony project, see:
+#     https://github.com/synchrony/smsn     
 
-# run extendo-android in the emulator
+# run smsn-android in the emulator
 mvn clean install \
-    && adb shell pm uninstall -k net.fortytwo.extendo \
-    && adb install target/extendo-android-*.apk
+    && adb shell pm uninstall -k net.fortytwo.smsn \
+    && adb install target/smsn-android-*.apk
 
 # uninstall
-adb uninstall net.fortytwo.extendo
+adb uninstall net.fortytwo.smsn
 

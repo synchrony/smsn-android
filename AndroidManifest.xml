@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="net.fortytwo.extendo"
+          package="net.fortytwo.smsn"
           android:versionCode="1"
           android:versionName="1.0">
 
-    <!-- make calls to external services, such as Extendo's Rexster -->
+    <!-- make calls to external services, such as SmSn's Rexster -->
     <uses-permission android:name="android.permission.INTERNET"></uses-permission>
 
     <!-- communicate with Extend-o-Body devices -->

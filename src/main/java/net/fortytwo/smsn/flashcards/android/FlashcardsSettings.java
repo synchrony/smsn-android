@@ -1,8 +1,8 @@
-package net.fortytwo.extendo.flashcards.android;
+package net.fortytwo.smsn.flashcards.android;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
-import net.fortytwo.extendo.R;
+import net.fortytwo.smsn.R;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

@@ -1,10 +1,10 @@
-package net.fortytwo.extendo.ping;
+package net.fortytwo.smsn.ping;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import net.fortytwo.extendo.R;
+import net.fortytwo.smsn.R;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

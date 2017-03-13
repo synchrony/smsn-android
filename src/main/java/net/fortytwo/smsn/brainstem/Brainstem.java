@@ -1,19 +1,19 @@
-package net.fortytwo.extendo.brainstem;
+package net.fortytwo.smsn.brainstem;
 
 import android.util.Log;
 import edu.rpi.twc.sesamestream.BindingSetHandler;
 import edu.rpi.twc.sesamestream.QueryEngine;
-import net.fortytwo.extendo.Extendo;
-import net.fortytwo.extendo.Main;
-import net.fortytwo.extendo.hand.ExtendoHandControl;
-import net.fortytwo.extendo.p2p.ExtendoAgent;
-import net.fortytwo.extendo.p2p.Pinger;
-import net.fortytwo.extendo.p2p.SideEffects;
-import net.fortytwo.extendo.p2p.osc.OscControl;
-import net.fortytwo.extendo.p2p.osc.OscReceiver;
-import net.fortytwo.extendo.rdf.Activities;
-import net.fortytwo.extendo.typeatron.TypeatronControl;
-import net.fortytwo.extendo.util.TypedProperties;
+import net.fortytwo.smsn.SemanticSynchrony;
+import net.fortytwo.smsn.Main;
+import net.fortytwo.smsn.hand.ExtendoHandControl;
+import net.fortytwo.smsn.p2p.SmSnAgent;
+import net.fortytwo.smsn.p2p.Pinger;
+import net.fortytwo.smsn.p2p.SideEffects;
+import net.fortytwo.smsn.p2p.osc.OscControl;
+import net.fortytwo.smsn.p2p.osc.OscReceiver;
+import net.fortytwo.smsn.rdf.Activities;
+import net.fortytwo.smsn.typeatron.TypeatronControl;
+import net.fortytwo.smsn.util.TypedProperties;
 import org.openrdf.model.URI;
 import org.openrdf.query.BindingSet;
 
@@ -36,20 +36,20 @@ public class Brainstem {
      * The Brainstem's SDP service name for Bluetooth communication
      */
     public static final String
-            BLUETOOTH_NAME = "Extendo";
+            BLUETOOTH_NAME = "SmSn";
 
     public static final String
-            PROP_EXTENDOHAND_ADDRESS = "net.fortytwo.extendo.brainstem.handAddress",
-            PROP_TYPEATRON_ADDRESS = "net.fortytwo.extendo.brainstem.typeatronAddress";
+            PROP_EXTENDOHAND_ADDRESS = "net.fortytwo.smsn.brainstem.handAddress",
+            PROP_TYPEATRON_ADDRESS = "net.fortytwo.smsn.brainstem.typeatronAddress";
 
     /**
      * The expected location of Brainstem's configuration file
-     * This file is currently separate from the main Extendo configuration, ./extendo.properties.
+     * This file is currently separate from the main SmSn configuration, ./smsn.properties.
      * On Android, the latter may be an inaccessible location (in the file system root)
      */
-    public static final String PROPS_PATH = "/sdcard/extendo.properties";
+    public static final String PROPS_PATH = "/sdcard/smsn.properties";
 
-    private ExtendoAgent agent;
+    private SmSnAgent agent;
 
     private final BluetoothManager bluetoothManager;
     // receives OSC messages from the Bluetooth devices (as opposed to the WiFi interface)
@@ -102,7 +102,7 @@ public class Brainstem {
         this.texter = texter;
     }
 
-    public ExtendoAgent getAgent() {
+    public SmSnAgent getAgent() {
         return agent;
     }
 
@@ -130,13 +130,13 @@ public class Brainstem {
             throws BrainstemException, TypedProperties.PropertyException,
             IOException, OscControl.DeviceInitializationException {
 
-        Extendo.addConfiguration(new File(PROPS_PATH));
-        TypedProperties configuration = Extendo.getConfiguration();
+        SemanticSynchrony.addConfiguration(new File(PROPS_PATH));
+        TypedProperties configuration = SemanticSynchrony.getConfiguration();
 
         // note: currently, setTextEditor() must be called before passing textEditor to the device controls
 
         try {
-            agent = new ExtendoAgent(true);
+            agent = new SmSnAgent(true);
 
             final BindingSetHandler gbGestureAnswerHandler = new BindingSetHandler() {
                 public void handle(final BindingSet bindings) {
